@@ -41,3 +41,6 @@ ml-kem = "0.2"
 rlp = "0.6"
 hex = "0.4"
 rand = "0.8"
+
+# Этап 31: Active Directory (LDAP)
+ldap3 = "0.11"

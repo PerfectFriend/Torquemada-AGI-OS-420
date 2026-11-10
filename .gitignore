@@ -11,3 +11,4 @@ packaging/
 *.iso
 *.AppImage
 node_modules/
+app/src-tauri/binaries/
