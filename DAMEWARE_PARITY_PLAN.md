@@ -45,7 +45,9 @@ native-only) → `cargo test --workspace` (рост счётчика) → `cargo
 - `net_ping(host, count)`, `net_traceroute(host)`, `net_dns_lookup(name, record)`, `net_port_check(host, port)` — поверх tokio/icmp или вызовов, парсинг вывода в Rust.
 - UI: в v-net ряд полей + кнопки PING/TRACE/DNS/PORT.
 
-## Этап 31 — Active Directory модуль (LDAP)
+## Этап 31 — Active Directory модуль (LDAP) — ✅ DONE 2026-11-09
+- **Сделано:** `ad.rs` (крейт `ldap3` 0.11 sync API), 13 команд: `ad_config_set/get` (пароль bind — AES-256-GCM через w420_ai::encryption, файл `~/.w420/ad.json` 0600, наружу только маска `…xxxx`), `ad_ping` (RootDSE), `ad_tree` (OU), `ad_users_search` (фильтр экранирован по RFC 4515, флаги userAccountControl), `ad_groups`, `ad_user_unlock` (pwdAccountLockedTime=0), `ad_user_reset_password` (unicodePwd как бинарный Vec<u8> UTF-16LE + pwdLastSet=0), `ad_group_members/add/remove`, `ad_gpo_list` (read-only), `ad_export` CSV/XML. UI `ad.js` — панель AD в v-net, HITL-confirm на unlock/reset/группы.
+- **Тесты:** +6 (escape_filter, valid_dn, unicodePwd байты, маска пароля, encrypt roundtrip, xml_esc). Workspace: 179 passed, 0 failed. build exit 0. Пуш в PerfectFriend/Torquemada-AGI-OS-420 (cc3b67b).
 - Новый модуль `ad.rs`: `ad_domains`, `ad_tree(domain, base_dn)` (OU/контейнеры), `ad_users_search`, `ad_groups`, `ad_user_unlock`, `ad_user_reset_password`, `ad_group_add_member/remove`, `ad_gpo_list` (read-only), `ad_export(objects, format csv|xml)`.
 - Безопасность: bind-DN и пароль — в зашифрованный keyring (как wallet/did), наружу — маски; HITL (APPROVE) для unlock/reset password.
 - UI: новая вкладка ACTIVE DIRECTORY.
