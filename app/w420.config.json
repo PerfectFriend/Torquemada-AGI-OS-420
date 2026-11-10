@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "_note": "Заготовка настроек W420. Пока приложение их не читает: подключатся фазы сети/кошелька.",
+  "ai": { "mode": "cloud", "autonomous_max_runs": 10, "require_approval": true },
+  "network": { "tor": { "enabled": false, "socks_port": 9050 }, "tailscale": { "enabled": false } },
+  "wallet": { "network": "sepolia", "chain_id": 11155111, "rpc_url": "" },
+  "ui": { "theme": "matrix", "scanlines": true },
+  "security": { "csp_strict": false }
+}

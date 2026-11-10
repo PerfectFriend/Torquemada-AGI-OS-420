@@ -1,0 +1,43 @@
+[workspace]
+resolver = "2"
+members = [
+  "app/src-tauri",
+  "crates/w420-core",
+  "crates/w420-ai",
+  "tools/w420-installer",
+  "tts-server/tts-rust",
+]
+
+[workspace.dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", features = ["json"] }
+axum = "0.8"
+sha2 = "0.10"
+sysinfo = "0.30"
+uuid = { version = "1", features = ["v4"] }
+url = "2.5"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+rusqlite = { version = "0.36", features = ["bundled"] }
+aes-gcm = { version = "0.10", features = ["std"] }
+pbkdf2 = "0.12"
+zeroize = "1"
+# Этап 20: кошелёк REAL (secp256k1/BIP-39/BIP-32 в Rust, подпись legacy-транзакций)
+k256 = { version = "0.13", features = ["ecdsa", "sha256", "pkcs8"] }
+# Этап 22: DID P-256 (p256 — NIST кривая, не secp256k1)
+p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "sha256"] }
+signature = "2"
+# Этап 27: remote desktop — PNG для скриншотов RFB-кадров
+png = "0.17"
+tiny-bip39 = "2"
+sha3 = "0.10"
+hmac = "0.12"
+hkdf = "0.12"
+ml-kem = "0.2"
+rlp = "0.6"
+hex = "0.4"
+rand = "0.8"

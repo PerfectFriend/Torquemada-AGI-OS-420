@@ -1,0 +1,40 @@
+[package]
+name = "w420-ai"
+version = "0.1.0"
+edition = "2021"
+
+# w420-ai — абстракция над внешними AI-провайдерами для кибербезопасностной ОС.
+# Обеспечивает:
+#   - Единый интерфейс (трейт AIProvider) для всех поддерживаемых провайдеров
+#   - Ротацию ключей с сортировкой по latency (самый быстрый сначала)
+#   - Автотестирование работоспособности ключей
+#   - Шифрование ключей на диске (AES-256-GCM)
+#   - Прозрачное переключение при ошибках (rate limit, timeout, 401/429/503)
+
+[dependencies]
+# Рабочая область (workspace)
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+reqwest = { workspace = true, features = ["json"] }
+uuid = { workspace = true, features = ["v4", "serde"] }
+tracing = { workspace = true }
+
+# База данных SQLite для хранения провайдеров, ключей и статистики
+rusqlite = { workspace = true }
+
+# Шифрование API-ключей на диске: AES-256-GCM
+aes-gcm = { workspace = true }
+pbkdf2 = { workspace = true }
+zeroize = { workspace = true }
+
+# Внешние крейты для удобства
+chrono = "0.4"      # Работа с датами и временем
+chrono-tz = "0.9"   # Часовые пояса
+base64 = "0.22"     # Base64 кодирование (необходимо для некоторых провайдеров)
+sha2 = "0.10"      # SHA-256 для PBKDF2 вывода ключа шифрования
+getrandom = "0.2"   # Криптографически стойкая генерация случайных чисел (nonce, соль)
+
+[dev-dependencies]
+# Для тестирования используем только стандартную библиотеку и workspace-зависимости

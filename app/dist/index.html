@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WINDOWS 420 — AGI OS v0.1</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+:root{--live:#00ff41;--sim:#ff2244;--wip:#ffaa00;--bg:#020a02;--panel:#041204;--ink:#b6ffc4;--c:var(--live);color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{height:100%;margin:0}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:13px/1.5 'Share Tech Mono',ui-monospace,monospace;display:grid;grid-template-rows:auto 1fr;overflow:hidden}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,0,0,.18) 2px 3px);z-index:9}
+header{display:flex;align-items:center;gap:14px;padding:8px 14px;border-bottom:1px solid #0a3a14;background:#010601}
+.logo{font:900 14px Orbitron,sans-serif;letter-spacing:4px;color:var(--live);text-shadow:0 0 10px var(--live)}
+.legend{margin-left:auto;display:flex;gap:10px;font-size:11px}
+.b{display:inline-block;padding:0 6px;border:1px solid var(--c);color:var(--c);font-size:10px;letter-spacing:1px;margin-left:6px;vertical-align:middle}
+.live{--c:var(--live)}.sim{--c:var(--sim)}.wip{--c:var(--wip)}
+main{display:grid;grid-template-columns:150px 1fr 250px;gap:8px;padding:8px;min-height:0}
+nav{display:flex;flex-direction:column;gap:6px;overflow:auto}
+nav button{background:transparent;border:1px solid var(--c);color:var(--c);padding:8px;text-align:left;font:inherit;cursor:pointer;opacity:.7}
+nav button.on,nav button:hover{opacity:1;background:color-mix(in srgb,var(--c) 14%,transparent);box-shadow:0 0 10px color-mix(in srgb,var(--c) 40%,transparent)}
+section.view{display:none;border:1px solid var(--c);background:var(--panel);padding:12px;min-height:0;overflow:auto;flex-direction:column;gap:8px}
+section.view.on{display:flex}
+section.sim{background:#140308}
+h2{margin:0;font:700 12px Orbitron,sans-serif;letter-spacing:3px;color:var(--c);text-shadow:0 0 8px var(--c)}
+aside{display:flex;flex-direction:column;gap:8px;overflow:auto}
+.card{border:1px solid var(--c);padding:8px;background:var(--panel)}
+.card.sim{background:#140308}
+.k{font-size:10px;letter-spacing:2px;color:var(--c);opacity:.85}
+.v{font:900 17px Orbitron,sans-serif;color:var(--c);text-shadow:0 0 8px var(--c)}
+input,textarea,select{background:#000;border:1px solid var(--c);color:var(--c);font:inherit;padding:6px;width:100%}
+button.a{background:transparent;border:1px solid var(--c);color:var(--c);padding:6px 12px;font:inherit;cursor:pointer;letter-spacing:1px}
+button.a:hover{background:var(--c);color:#000}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.row>input{flex:1;min-width:120px}
+#out{flex:1;overflow:auto;min-height:120px;white-space:pre-wrap;word-break:break-word}
+#out .s{color:var(--sim)}#out .w{color:var(--wip)}#out .u{color:#00f5ff}
+canvas{width:100%;flex:1;min-height:260px;border:1px solid #0a3a14;touch-action:none;background:#000}
+.item{display:flex;gap:8px;align-items:center;border-bottom:1px solid #0a3a14;padding:4px 0}
+.item span:first-child{flex:1;word-break:break-all}
+.mono{word-break:break-all;font-size:11px}
+body{background:radial-gradient(ellipse at 15% 0%,#06301100 0,transparent 0),radial-gradient(ellipse at 20% 0%,#052a0f 0,transparent 55%),radial-gradient(ellipse at 100% 100%,#1a0309 0,transparent 50%),#020a02}
+section.view,.card{border-radius:3px;position:relative;box-shadow:0 0 18px color-mix(in srgb,var(--c) 14%,transparent),inset 0 0 24px color-mix(in srgb,var(--c) 5%,transparent)}
+section.view::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid var(--c);border-left:2px solid var(--c)}
+#ask{flex:1;max-width:460px;margin-left:12px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chips button{background:transparent;border:1px solid var(--c);color:var(--c);padding:3px 10px;font:inherit;font-size:11px;cursor:pointer;border-radius:12px}.chips button:hover{background:var(--c);color:#000}
+#feed div{font-size:11px;border-left:2px solid var(--c);padding-left:6px;margin-top:4px}
+@keyframes pulse{50%{opacity:.45}}.logo{animation:pulse 4s infinite}
+@media(max-width:820px){main{grid-template-columns:1fr;overflow:auto}nav{flex-direction:row}aside{order:3}body{overflow:auto}}
+/* ===== тема: светлая ===== */
+:root[data-theme="light"]{--live:#0a7a2f;--sim:#c01030;--wip:#9a6200;--bg:#eef4ee;--panel:#ffffff;--ink:#0d2a12;color-scheme:light}
+:root[data-theme="light"] body{background:radial-gradient(ellipse at 20% 0%,#d8ecd8 0,transparent 55%),radial-gradient(ellipse at 100% 100%,#f6dde2 0,transparent 50%),#eef4ee}
+:root[data-theme="light"] body::after{background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,60,0,.05) 2px 3px)}
+:root[data-theme="light"] header{background:#e2efe2;border-bottom-color:#9cc79c}
+:root[data-theme="light"] section.view,:root[data-theme="light"] .card{border-color:var(--c);background:var(--panel)}
+:root[data-theme="light"] section.sim{background:#fbe9ec}
+:root[data-theme="light"] .card.sim{background:#fbe9ec}
+:root[data-theme="light"] input,:root[data-theme="light"] textarea,:root[data-theme="light"] select{background:#fff}
+:root[data-theme="light"] #out,:root[data-theme="light"] canvas{background:#f6faf6;border-color:#9cc79c}
+:root[data-theme="light"] .item{border-bottom-color:#cfe3cf}
+:root[data-theme="light"] .logo{text-shadow:0 0 8px rgba(10,122,47,.4)}
+:root[data-theme="light"] nav button,:root[data-theme="light"] button.a,:root[data-theme="light"] .chips button{color:var(--c)}
+:root[data-theme="light"] button.a:hover,:root[data-theme="light"] .chips button:hover{color:#fff}
+/* ===== шестерёнка настроек (правый верхний угол) ===== */
+.gear{margin-left:10px;background:transparent;border:1px solid var(--c);color:var(--c);width:30px;height:30px;font-size:16px;line-height:1;cursor:pointer;border-radius:3px;flex:0 0 auto}
+.gear:hover{background:var(--c);color:#000}
+.gear.alarm{border-color:#f44;color:#f44}
+.gear.alarm.on{background:#f44;color:#000;animation:pulse 1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 14px #f44}}
+/* ===== панель настроек ===== */
+#spanel{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;display:flex;align-items:flex-start;justify-content:flex-end;padding:46px 14px 14px}
+#spanel[hidden]{display:none}
+.spcard{width:300px;max-width:92vw;display:flex;flex-direction:column;gap:10px;padding:12px}
+.spcard h2{margin:0}
+.spcard label{display:flex;flex-direction:column;gap:4px;font-size:11px;letter-spacing:1px;color:var(--c)}
+.spcard .row{justify-content:flex-end}
+.spnote{font-size:10px;opacity:.7}
+</style>
+<script src="vendor/ethers.umd.min.js"></script>
+<script src="i18n.en.js"></script>
+<script src="i18n.es.js"></script>
+<script src="i18n.js"></script>
+</head>
+<body>
+<header>
+  <div class="logo">⬡ WINDOWS 420</div><span style="font-size:11px;opacity:.7">AGI OS v0.2 · AI shell</span><input id="ask" class="live" placeholder="⌘ Спроси AGI-Ω или дай команду… (Ctrl+K)" autocomplete="off">
+  <div class="legend"><span class="live"><span class="b">LIVE</span> реально работает</span><span class="wip"><span class="b">WIP</span> частично</span><span class="sim"><span class="b">SIM</span> симуляция</span></div>
+  <button id="alarm" class="gear alarm" title="Аварийный режим: жёсткая фильтрация на всех каналах" aria-label="Аварийный режим">🚨</button>
+  <button id="gear" class="gear" title="Настройки" aria-label="Настройки">⚙</button>
+</header>
+<main>
+<nav id="nav"></nav>
+<div style="display:flex;min-height:0;flex-direction:column;gap:8px">
+
+<section class="view live on" id="v-term"><h2>AGI TERMINAL <span class="b live">LIVE</span></h2>
+  <div id="out"></div>
+  <div class="row"><span>$</span><input id="cmd" autocomplete="off" spellcheck="false" placeholder="help"></div>
+</section>
+
+<section class="view live" id="v-vault"><h2>QUANTUM FS · ENCRYPTED VAULT <span class="b live">LIVE</span> <span class="b sim">PQC TAG: SIM</span></h2>
+  <div class="mono" style="opacity:.8">Реальное шифрование: AES-256-GCM, ключ из PBKDF2 (200k итераций) через Web Crypto. Хранится в localStorage этого браузера.</div>
+  <input id="vf" type="file"><input id="vn" placeholder="имя файла"><textarea id="vt" rows="3" placeholder="содержимое"></textarea><input id="vp" type="password" placeholder="пароль">
+  <div class="row"><button class="a" id="vput">ENCRYPT + SAVE</button><span id="vmsg" class="mono"></span></div>
+  <div id="vlist"></div>
+</section>
+
+<section class="view live" id="v-id"><h2>DIGITAL ID <span class="b live">LIVE</span> <span class="b wip">DID: WIP</span></h2>
+  <div class="mono" style="opacity:.8">Реальная пара ключей ECDSA P-256 (Web Crypto), приватный ключ неизвлекаемый. Отпечаток — SHA-256. Формат did:w420 — собственный, не W3C DID.</div>
+  <div class="row"><button class="a" id="idgen">GENERATE IDENTITY</button><button class="a" id="idsign">SIGN CHALLENGE</button></div>
+  <div class="card"><div class="k">ID</div><div class="mono" id="idv">— не создан —</div></div>
+  <div class="card"><div class="k">SIGNATURE / VERIFY</div><div class="mono" id="idsig">—</div></div>
+</section>
+
+<section class="view live" id="v-radio"><h2>AGI-Ω FM <span class="b live">LIVE</span> <span class="b sim">запасные реплики: SIM</span></h2>
+  <div class="mono" style="opacity:.8">Генеративное радио. Музыка синтезируется в браузере и меняет настроение по состоянию системы: покой, автономная задача, ожидающие подтверждения или низкий FPS. Раз в ~90 с ведущий читает наблюдение, анекдот, сводку или идею по текущему контексту (до 20 реплик модели за сессию, потом запасные).</div>
+  <div class="row"><button class="a" id="rbtn">▶ ON AIR</button><label class="mono">громкость <input id="rvol" type="range" min="0" max="100" value="50" style="width:120px"></label><label class="mono"><input id="rvoice" type="checkbox" checked style="width:auto"> голос</label><span class="mono" id="rmood">—</span></div>
+  <canvas id="rv" style="flex:0 0 90px;min-height:90px;height:90px"></canvas>
+  <div class="row"><input id="rreq" placeholder="заказать тему для ведущего"><button class="a" id="rask">ЗАКАЗАТЬ</button></div>
+  <div class="card"><div class="k">ВЫПУСК ДНЯ · из журнала аудита</div><div class="row"><button class="a" id="ebtn">СОБРАТЬ ВЫПУСК</button><button class="a" id="esay">ОЗВУЧИТЬ</button><input id="epw" type="password" placeholder="пароль vault"><button class="a" id="evault">В VAULT</button></div><div class="mono" id="estat">числа считает программа, текст пишет модель</div><div class="mono" id="etext" style="margin-top:6px">—</div></div>
+  <div class="card"><div class="k">NOW ON AIR</div><div id="rnow" class="mono">—</div></div>
+  <div id="rlog" class="mono"></div>
+</section>
+
+<section class="view live" id="v-audit"><h2>AUDIT LOG <span class="b live">LIVE</span></h2>
+  <div class="mono" style="opacity:.8">Журнал действий ИИ-агентов: вызовы инструментов, решения APPROVE/REJECT, задачи, события монитора. Записи связаны цепочкой SHA-256: правка одной записи ломает проверку. Это защита от случайных и наивных правок: тот, кто имеет доступ к браузеру, может пересчитать цепочку.</div>
+  <div class="row"><button class="a" id="averify">VERIFY CHAIN</button><input id="apw" type="password" placeholder="пароль vault"><button class="a" id="aseal">SEAL → VAULT</button><button class="a" id="aclr">CLEAR</button></div>
+  <div class="mono" id="amsg"></div><div id="alist" class="mono"></div>
+</section>
+
+<section class="view live" id="v-key"><h2>WALLET · OFFLINE KEYS <span class="b live">LIVE</span> <span class="b wip">NETWORK: WIP</span></h2>
+  <div class="mono" style="opacity:.8">Реальный HD-кошелёк (BIP-39, путь m/44'/60'/0'/0/0, ethers v6) и офлайн-подпись транзакций для Sepolia. Баланс и отправка в сеть не подключены: страница не может обращаться к RPC. Только тестовые ключи, реальные мнемоники сюда не вводить. Ключ живёт в памяти до закрытия вкладки.</div>
+  <div class="row"><button class="a" id="kgen">NEW WALLET</button><input id="kimp" placeholder="или вставь тестовую мнемонику"><button class="a" id="kload">IMPORT</button></div>
+  <div class="card"><div class="k">ADDRESS</div><div class="mono" id="kaddr">—</div>
+   <div class="row"><button class="a" id="kshow">REVEAL PHRASE</button><input id="kpw" type="password" placeholder="пароль для vault"><button class="a" id="kvault">ENCRYPT → VAULT</button></div><div class="mono" id="kphr"></div></div>
+  <div class="card"><div class="k">SIGN TX OFFLINE · SEPOLIA (chain 11155111)</div>
+   <div class="row"><input id="kto" placeholder="to 0x…"><input id="kval" placeholder="ETH" style="max-width:90px"><input id="knon" placeholder="nonce" style="max-width:80px" value="0"><input id="kgas" placeholder="gwei" style="max-width:80px" value="20"></div>
+   <button class="a" id="ksign">SIGN</button><div class="mono" id="ktx">—</div></div>
+</section>
+
+<section class="view sim" id="v-wallet"><h2>CRYPTO · WALLET · MINT · DC EXCHANGE <span class="b sim">SIM</span></h2>
+  <div class="mono">Всё на этой вкладке — симуляция: адрес не настоящий (нет secp256k1/BIP-39), блокчейна нет, ордера никуда не уходят.</div>
+  <div class="card sim"><div class="k">WALLET [SIM]</div><div class="mono" id="waddr"></div><div class="v" id="wbal">4.2000 ΩBTC</div></div>
+  <div class="row"><input id="wto" placeholder="адрес получателя"><input id="wamt" placeholder="сумма" style="max-width:100px"><button class="a" id="wsend">SEND [SIM]</button></div>
+  <div class="row"><input id="tn" placeholder="имя токена"><input id="ts" placeholder="SYM" style="max-width:80px"><input id="tsup" placeholder="supply" style="max-width:110px"><button class="a" id="tmint">MINT [SIM]</button></div>
+  <div class="card sim"><div class="k">DC EXCHANGE · AI MARKET [SIM]</div><div id="mkt"></div></div>
+  <div class="card sim"><div class="k">LEDGER [SIM]</div><div class="mono" id="led">—</div></div>
+</section>
+
+<section class="view live" id="v-map"><h2>MIND MAP <span class="b live">LIVE</span> <span class="b sim">AGI-GEN: SIM</span></h2>
+  <div class="row"><input id="mt" placeholder="текст узла (привяжется к выбранному)"><button class="a" id="madd">ADD NODE</button><button class="a" id="mdel">DELETE</button></div>
+  <canvas id="mc"></canvas>
+</section>
+
+<section class="view sim" id="v-ai"><h2>AGI ASSISTANT <span class="b sim" id="aib">SIM</span></h2>
+  <div class="mono" id="aimsg">Подключаю ядро…</div>
+  <div id="chat" style="flex:1;overflow:auto;min-height:120px"></div>
+  <div class="chips" id="chips"></div><div class="row"><input id="ai" placeholder="спроси AGI-Ω"><button class="a" id="aisend">SEND</button></div>
+</section>
+
+<section class="view live" id="v-net"><h2>СЕТЬ · ОБНАРУЖЕНИЕ ХОСТОВ <span class="b live">LIVE</span></h2>
+  <div class="row">
+    <input id="n-cidr" placeholder="подсеть, напр. 192.168.1.0/24" value="192.168.1.0/24" style="max-width:220px">
+    <button class="a" id="n-scan">СКАНИРОВАТЬ СЕТЬ</button>
+    <button class="a" id="n-refresh">ОБНОВИТЬ СПИСОК</button>
+    <button class="a" id="n-diff">DIFF СКАНОВ</button>
+    <span class="mono" id="n-stat">—</span>
+  </div>
+  <div class="mono" style="opacity:.8">Хосты обновляются в реальном времени во время сканирования. ОС определяется по TTL ping, имя — через reverse DNS.</div>
+  <div id="n-hosts" style="margin-top:6px"></div>
+  <div class="card live" style="margin-top:8px"><div class="k">ИНВЕНТАРЬ ХОСТОВ (SSH-админка)</div>
+    <div class="row"><input id="h-name" placeholder="имя"><input id="h-ip" placeholder="IP" style="max-width:140px"><input id="h-user" placeholder="user" style="max-width:100px"><input id="h-port" placeholder="22" style="max-width:60px"><select id="h-os" style="width:auto"><option>Linux</option><option>Windows</option><option>Сетевое устройство</option></select><button class="a" id="h-add">ДОБАВИТЬ</button></div>
+    <div id="h-list" style="margin-top:6px"></div>
+  </div>
+  <div class="card live" style="margin-top:8px"><div class="k">БРАНДМАУЭР · СЕГМЕНТАЦИЯ (nftables, таблица w420_fw)</div>
+    <div class="row">
+      <select id="fw-profile" style="width:auto"><option value="office">ОФИС (открыто)</option><option value="guest">ГОСТЕВАЯ (только 53/80/443 наружу)</option><option value="dmz">DMZ (входящие 22/80/443)</option><option value="isolated">ИЗОЛЯЦИЯ (всё drop)</option></select>
+      <button class="a" id="fw-apply">ПРИМЕНИТЬ ПРОФИЛЬ</button>
+      <button class="a" id="fw-rules">ПРАВИЛА</button>
+      <span class="mono" id="fw-stat">—</span>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <input id="fw-ip" placeholder="IP для изоляции" style="max-width:140px">
+      <button class="a" id="fw-isolate">ИЗОЛИРОВАТЬ ХОСТ</button>
+      <button class="a" id="fw-logs">ЖУРНАЛ FW</button>
+    </div>
+    <div id="fw-out" class="mono" style="margin-top:6px;opacity:.85;white-space:pre-wrap"></div>
+  </div>
+  <div class="card live" style="margin-top:8px"><div class="k">SIEM · СОБЫТИЯ · ИНЦИДЕНТЫ <span class="b live">LIVE</span></div>
+    <div class="row">
+      <button class="a" id="siem-ingest">INGEST</button>
+      <button class="a" id="siem-dash">ДАШБОРД</button>
+      <button class="a" id="siem-ai">AI-СВОДКА</button>
+      <input id="siem-q" placeholder="поиск по событиям" style="max-width:180px">
+      <button class="a" id="siem-search">НАЙТИ</button>
+      <span class="mono" id="siem-stat">—</span>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <button class="a" id="siem-rules">ПРАВИЛА</button>
+      <button class="a" id="siem-incidents">ИНЦИДЕНТЫ</button>
+      <input id="siem-rname" placeholder="имя правила" style="max-width:110px">
+      <input id="siem-rmin" placeholder="min соб." type="number" style="max-width:70px">
+      <input id="siem-rwin" placeholder="окно мин" type="number" style="max-width:70px">
+      <select id="siem-rsev" style="width:auto"><option>low</option><option>medium</option><option>high</option><option>critical</option></select>
+      <input id="siem-rtitle" placeholder="шаблон: {cnt} событий с {src}" style="max-width:200px">
+      <button class="a" id="siem-radd">+ ПРАВИЛО</button>
+      <button class="a" id="siem-rtoggle">ВКЛ/ВЫКЛ id…</button>
+      <button class="a" id="siem-rdel">УДАЛИТЬ id…</button>
+      <button class="a" id="siem-iclose">ИНЦИДЕНТ id→resolved…</button>
+    </div>
+    <div id="siem-out" class="mono" style="margin-top:6px;opacity:.85;white-space:pre-wrap;max-height:220px;overflow:auto"></div>
+  </div>
+  <div class="card live" style="margin-top:8px"><div class="k">EDR · ПРОЦЕССЫ · СОЕДИНЕНИЯ <span class="b live">LIVE</span></div>
+    <div class="row">
+      <button class="a" id="edr-scan">СКАН ПРОЦЕССОВ</button>
+      <button class="a" id="edr-conns">СОЕДИНЕНИЯ</button>
+      <button class="a" id="edr-base">BASELINE</button>
+      <button class="a" id="edr-diff">DIFF</button>
+      <button class="a" id="edr-watch">WATCH ВКЛ</button>
+      <span class="mono" id="edr-stat">—</span>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <input id="edr-pid" placeholder="PID для kill" style="max-width:90px">
+      <button class="a" id="edr-kill">KILL -9</button>
+      <input id="edr-ip" placeholder="IP для изоляции" style="max-width:140px">
+      <button class="a" id="edr-isolate">ИЗОЛИРОВАТЬ</button>
+      <button class="a" id="edr-events">СОБЫТИЯ</button>
+    </div>
+    <div id="edr-out" class="mono" style="margin-top:6px;opacity:.85;white-space:pre-wrap;max-height:220px;overflow:auto"></div>
+  </div>
+  <div class="card live" style="margin-top:8px"><div class="k">ПАТЧ-МЕНЕДЖМЕНТ (apt) <span class="b live">LIVE</span></div>
+    <div class="row">
+      <button class="a" id="p-scan">СКАН</button>
+      <button class="a" id="p-list">СПИСОК</button>
+      <button class="a" id="p-sec">SECURITY</button>
+      <button class="a" id="p-deploy">DEPLOY SECURITY</button>
+      <button class="a" id="p-rollback">ROLLBACK-ПЛАН</button>
+      <button class="a" id="p-ai">AI-ОЦЕНКА</button>
+      <span class="mono" id="p-stat">—</span>
+    </div>
+    <div id="p-out" class="mono" style="margin-top:6px;opacity:.85;white-space:pre-wrap;max-height:200px;overflow:auto"></div>
+  </div>
+  <div class="card live" style="margin-top:8px"><div class="k">VPN · WIREGUARD СЕРВЕР (w420wg) <span class="b live">LIVE</span></div>
+    <div class="row">
+      <button class="a" id="v-init">ИНИТ СЕРВЕРА</button>
+      <input id="v-peer" placeholder="имя peer" style="max-width:120px">
+      <button class="a" id="v-add">PEER +</button>
+      <button class="a" id="v-list">PEERS</button>
+      <button class="a" id="v-up">UP</button>
+      <button class="a" id="v-down">DOWN</button>
+      <button class="a" id="v-status">СТАТУС</button>
+      <button class="a" id="v-traffic">ТРАФИК</button>
+      <span class="mono" id="v-stat">—</span>
+    </div>
+    <div id="v-out" class="mono" style="margin-top:6px;opacity:.85;white-space:pre-wrap;max-height:200px;overflow:auto"></div>
+  </div>
+  <div class="card live" style="margin-top:8px"><div class="k">СКАНЕР СЕТИ / УЯЗВИМОСТИ (nmap) <span class="b live">LIVE</span></div>
+    <div class="row">
+      <input id="w-target" placeholder="цель: 192.168.1.0/24 или 10.0.0.5" style="max-width:180px" value="127.0.0.1">
+      <input id="w-ports" placeholder="порты (пусто = top1000)" style="max-width:140px">
+      <button class="a" id="w-net">СКАН СЕТИ (-sn)</button>
+      <button class="a" id="w-vuln">VULN-СКАН</button>
+      <button class="a" id="w-vlist">УЯЗВИМОСТИ</button>
+      <button class="a" id="w-hosts">ХОСТЫ</button>
+      <button class="a" id="w-ai">AI-ОТЧЁТ</button>
+      <button class="a" id="w-status">СТАТУС</button>
+      <button class="a" id="w-report">ОТЧЁТ MD</button>
+      <span class="mono" id="w-stat">—</span>
+    </div>
+    <div id="w-out" class="mono" style="margin-top:6px;opacity:.85;white-space:pre-wrap;max-height:220px;overflow:auto"></div>
+  </div>
+  <div class="card live" style="margin-top:8px"><div class="k">PKI · ЛОКАЛЬНЫЙ CA (openssl) <span class="b live">LIVE</span></div>
+    <div class="row">
+      <input id="k-cn" placeholder="CN сертификата" style="max-width:150px">
+      <input id="k-sans" placeholder="SAN через запятую" style="max-width:150px">
+      <button class="a" id="k-init">ИНИТ CA</button>
+      <button class="a" id="k-issue">ВЫПУСТИТЬ</button>
+      <button class="a" id="k-list">СЕРТИФИКАТЫ</button>
+      <button class="a" id="k-revoke">ОТОЗВАТЬ</button>
+      <button class="a" id="k-crl">CRL</button>
+      <button class="a" id="k-renew">ПРОДЛИТЬ ≤30д</button>
+      <span class="mono" id="k-stat">—</span>
+    </div>
+    <div id="k-out" class="mono" style="margin-top:6px;opacity:.85;white-space:pre-wrap;max-height:220px;overflow:auto"></div>
+  </div>
+  <div class="card live" style="margin-top:8px"><div class="k">AI SOC · АВТОНОМНЫЙ ЦИКЛ <span class="b live">LIVE</span></div>
+    <div class="row">
+      <button class="a" id="s-status">СТАТУС</button>
+      <button class="a" id="s-cycle">ЗАПУСТИТЬ ЦИКЛ</button>
+      <button class="a" id="s-inc">ИНЦИДЕНТЫ</button>
+      <button class="a" id="s-ai">AI-СВОДКА</button>
+      <button class="a" id="s-forecast">ПРОГНОЗ</button>
+      <span class="mono" id="s-stat">—</span>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <input id="s-q" placeholder="вопрос SOC на естественном языке" style="flex:1">
+      <button class="a" id="s-chat">СПРОСИТЬ</button>
+    </div>
+    <div id="s-out" class="mono" style="margin-top:6px;opacity:.85;white-space:pre-wrap;max-height:260px;overflow:auto"></div>
+  </div>
+</section>
+</div>
+
+<aside>
+  <div class="card live"><div class="k">CLOCK</div><div class="v" id="h-clock">--:--:--</div></div>
+  <div class="card live"><div class="k">LOGICAL CORES</div><div class="v" id="h-cores">—</div></div>
+  <div class="card live"><div class="k">JS HEAP <span class="b live">LIVE</span></div><div class="v" id="h-heap">—</div></div>
+  <div class="card live"><div class="k">UI FPS</div><div class="v" id="h-fps">—</div></div>
+  <div class="card live"><div class="k">NETWORK</div><div class="v" id="h-net" style="font-size:13px">—</div></div>
+  <div class="card live"><div class="k">POWER</div><div class="v" id="h-bat" style="font-size:13px">—</div></div>
+  <div class="card live"><div class="k">STORAGE QUOTA</div><div class="v" id="h-sto" style="font-size:13px">—</div></div>
+  <div class="card live"><div class="k">AUTONOMOUS TASK <span class="b live">LIVE</span></div><input id="tgoal" placeholder="цель, напр.: следи за сетью и FPS"><div class="row" style="margin-top:6px"><select id="tint" style="width:auto"><option value="30">30 с</option><option value="60" selected>60 с</option><option value="300">5 мин</option></select><button class="a" id="tgo">START</button><button class="a" id="tstop">STOP</button></div><div class="mono" id="tstat">не запущена</div></div>
+  <div class="card live"><div class="k">THREAT MONITOR AGENT <span class="b live">LIVE</span></div><div id="feed"></div><div class="row" style="margin-top:6px"><button class="a" id="brief">AGI BRIEF</button></div>
+    <div class="row" style="margin-top:6px">
+      <button class="a" id="th-scan">СКАН СИСТЕМЫ</button>
+      <button class="a" id="th-sync">SYNC БАЗЫ CVE</button>
+      <button class="a" id="th-vulns">УЯЗВИМОСТИ</button>
+      <select id="th-sev" style="width:auto"><option value="">все severity</option><option>critical</option><option>high</option><option>medium</option><option>low</option></select>
+      <button class="a" id="th-alerts">АЛЕРТЫ</button>
+      <button class="a" id="th-src">ИСТОЧНИКИ</button>
+      <button class="a" id="th-ack">АЛЕРТ id → прочитан</button>
+      <span class="mono" id="th-stat">—</span>
+    </div>
+    <div class="mono" id="th-out" style="margin-top:6px;opacity:.85;white-space:pre-wrap;max-height:220px;overflow:auto"></div>
+  </div>
+  <div class="card sim"><div class="k">AGI CONSCIOUSNESS <span class="b sim">SIM</span></div><div class="v" id="h-agi">99.7%</div></div>
+  <div class="card sim"><div class="k">MESH NODES <span class="b sim">SIM</span></div><div class="v" id="h-mesh">47</div></div>
+</aside>
+</main>
+
+<div id="spanel" hidden>
+  <div class="card spcard">
+    <h2>⚙ Настройки</h2>
+    <label>Язык
+      <select id="s-lang" style="width:auto">
+        <option value="ru">Русский</option>
+        <option value="en">English</option>
+        <option value="es">Español</option>
+      </select>
+    </label>
+    <label>Тема
+      <select id="s-theme" style="width:auto">
+        <option value="dark">Тёмная</option>
+        <option value="light">Светлая</option>
+      </select>
+    </label>
+    <label class="row" style="flex-direction:row;align-items:center;gap:8px">
+      <input id="s-voice" type="checkbox" style="width:auto"> Голос радио
+    </label>
+    <label>Громкость радио
+      <input id="s-vol" type="range" min="0" max="100" value="50" style="width:100%">
+    </label>
+    <div class="card" style="border-color:#f44">
+      <div class="k" style="color:#f44">🚨 АВАРИЙНЫЙ РЕЖИМ</div>
+      <label>Уровень
+        <select id="e-level" style="width:auto">
+          <option value="monitor">Мониторинг (фильтры сняты)</option>
+          <option value="alert">Тревога (блок C2-портов и чёрного списка)</option>
+          <option value="emergency">АВАРИЙНЫЙ (drop всего входящего на всех каналах)</option>
+        </select>
+      </label>
+      <label class="row" style="flex-direction:row;align-items:center;gap:8px">
+        <input id="e-egress" type="checkbox" style="width:auto"> Жёсткий исходящий фильтр (только DNS/HTTP(S))
+      </label>
+      <label class="row" style="flex-direction:row;align-items:center;gap:8px">
+        <input id="e-auto" type="checkbox" style="width:auto"> Авто-включение при критическом алерте IDS
+      </label>
+      <div class="row"><button class="a" id="e-apply">ПРИМЕНИТЬ РЕЖИМ</button><button class="a" id="e-off">ОТБОЙ ТРЕВОГИ</button></div>
+      <div class="mono" id="e-stat">—</div>
+      <details style="margin-top:4px"><summary class="mono">показать правила nft</summary><pre id="e-rules" class="mono" style="max-height:160px;overflow:auto;font-size:10px"></pre></details>
+    </div>
+    <div class="row">
+      <button class="a" id="s-reset">Сбросить настройки</button>
+      <button class="a" id="s-close">Закрыть</button>
+    </div>
+    <div class="spnote">настройки сохраняются автоматически</div>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s),enc=new TextEncoder(),dec=new TextDecoder();
+const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+const b64=u=>btoa(String.fromCharCode(...u)),unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const sha=async s=>hex(await crypto.subtle.digest('SHA-256',enc.encode(s)));
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+/* NAV */
+const tabs=[['term','TERMINAL','live'],['vault','QFS VAULT','live'],['id','DIGITAL ID','live'],['map','MIND MAP','live'],['radio','RADIO','live'],['audit','AUDIT','live'],['key','WALLET','live'],['wallet','MINT · DEX','sim'],['ai','AGI ASSISTANT','sim'],['net','СЕТЬ · ХОСТЫ','live']];
+tabs.forEach(([id,l,st])=>{const b=document.createElement('button');b.textContent=l;b.className=st+(id==='term'?' on':'');b.onclick=()=>show(id);b.dataset.id=id;$('#nav').appendChild(b)});
+function show(id){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));if(id==='map')sizeMap();if(id==='audit')drawAudit()}
+
+/* HUD (real data where the browser exposes it) */
+$('#h-cores').textContent=navigator.hardwareConcurrency||'n/a';
+let frames=0,last=performance.now();
+(function f(t){frames++;requestAnimationFrame(f)})(0);
+setInterval(()=>{
+  $('#h-clock').textContent=new Date().toTimeString().slice(0,8);
+  const now=performance.now();$('#h-fps').textContent=Math.round(frames*1000/(now-last));frames=0;last=now;
+  const m=performance.memory;$('#h-heap').textContent=m?(m.usedJSHeapSize/1048576).toFixed(1)+' MB':'n/a (browser)';
+  const c=navigator.connection;$('#h-net').textContent=navigator.onLine?(c?`${c.effectiveType} · ${c.downlink} Mbps · rtt ${c.rtt}ms`:'online'):'OFFLINE';
+  $('#h-agi').textContent=(99+Math.random()).toFixed(1)+'%';
+},1000);
+navigator.getBattery?.().then(b=>{const u=()=>$('#h-bat').textContent=Math.round(b.level*100)+'%'+(b.charging?' ⚡ charging':'');u();b.onlevelchange=b.onchargingchange=u}).catch(()=>{});
+if(!navigator.getBattery)$('#h-bat').textContent='n/a (browser)';
+navigator.storage?.estimate?.().then(e=>$('#h-sto').textContent=`${(e.usage/1048576).toFixed(1)} / ${(e.quota/1073741824).toFixed(1)} GB`).catch(()=>{});
+
+/* TERMINAL */
+const out=$('#out');
+function p(t,c){const d=document.createElement('div');if(c)d.className=c;d.textContent=t;out.appendChild(d);out.scrollTop=out.scrollHeight;return d}
+p('W420 AGI OS v0.1 — ядро запущено. Введите help.');
+p('Правило цвета: белый/зелёный = реально, [SIM] красным = симуляция.','w');
+const cmds={
+ help:()=>p('help · status · hash <текст> · whoami · vault · wallet · agi <вопрос> · clear'),
+ status:()=>p(`cores=${navigator.hardwareConcurrency} online=${navigator.onLine} fps=${$('#h-fps').textContent} heap=${$('#h-heap').textContent}`),
+ whoami:()=>p(idPub?'did:w420:'+idFp:'identity не создана — вкладка DIGITAL ID'),
+ vault:()=>p(vault.length?vault.map(v=>'• '+v.name+' ('+v.ct.length+' b64)').join('\n'):'vault пуст'),
+ wallet:()=>hw?p('адрес: '+hw.address+' (реальный; баланс недоступен: сеть не подключена)'):p('[SIM] баланс '+bal.toFixed(4)+' ΩBTC — симуляция','s'),
+ clear:()=>{out.innerHTML=''}
+};
+$('#cmd').addEventListener('keydown',async e=>{
+  if(e.key!=='Enter')return;const v=e.target.value.trim();e.target.value='';if(!v)return;p('$ '+v,'u');
+  const [c,...r]=v.split(' ');const a=r.join(' ');
+  if(c==='hash')return p(a?await sha(a):'usage: hash <текст>');
+  if(c==='agi'){const d=p('AGI-Ω: …','u');return askAGI(a,t=>{d.textContent='AGI-Ω: '+t;out.scrollTop=out.scrollHeight})}
+  (cmds[c]||(()=>p('unknown: '+c,'w')))();
+});
+
+/* QFS VAULT (real AES-GCM) */
+let vault=store.get('w420.vault',[]);
+async function deriveKey(pass,salt){const m=await crypto.subtle.importKey('raw',enc.encode(pass),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},m,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
+function drawVault(){const l=$('#vlist');l.innerHTML='';vault.forEach((v,i)=>{const d=document.createElement('div');d.className='item';const n=document.createElement('span');n.textContent='🔐 '+v.name+' · '+v.ct.slice(0,24)+'…';const b=document.createElement('button');b.className='a';b.textContent='DECRYPT';b.onclick=()=>dec_(i);const x=document.createElement('button');x.className='a';x.textContent='✕';x.onclick=()=>{vault.splice(i,1);store.set('w420.vault',vault);drawVault()};d.append(n,b,x);l.appendChild(d)})}
+$('#vput').onclick=async()=>{
+  const n=$('#vn').value.trim(),t=$('#vt').value,pw=$('#vp').value;if(!n||!pw)return $('#vmsg').textContent='нужны имя и пароль';
+  const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},await deriveKey(pw,salt),enc.encode(t));
+  vault.push({name:n,salt:b64(salt),iv:b64(iv),ct:b64(new Uint8Array(ct))});store.set('w420.vault',vault);
+  $('#vt').value='';$('#vmsg').textContent='сохранено, зашифровано';drawVault();
+};
+async function dec_(i){
+  const pw=$('#vp').value,v=vault[i];if(!pw)return $('#vmsg').textContent='введите пароль в поле выше';
+  try{const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(v.iv)},await deriveKey(pw,unb64(v.salt)),unb64(v.ct));$('#vmsg').textContent='«'+v.name+'»: '+dec.decode(pt)}
+  catch(e){$('#vmsg').textContent='неверный пароль или файл повреждён'}
+}
+drawVault();
+
+/* DIGITAL ID (real ECDSA P-256) */
+let idPriv=null,idPub=null,idFp='';
+$('#idgen').onclick=async()=>{
+  const k=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},false,['sign','verify']);
+  idPriv=k.privateKey;idPub=k.publicKey;idFp=(await sha(JSON.stringify(await crypto.subtle.exportKey('jwk',idPub)))).slice(0,40);
+  $('#idv').textContent='did:w420:'+idFp+'\nалгоритм: ECDSA P-256 · приватный ключ неизвлекаем · живёт до закрытия вкладки';
+};
+$('#idsign').onclick=async()=>{
+  if(!idPriv)return $('#idsig').textContent='сначала создайте identity';
+  const ch=hex(crypto.getRandomValues(new Uint8Array(16))),d=enc.encode(ch);
+  const sig=await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},idPriv,d);
+  const ok=await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},idPub,sig,d);
+  $('#idsig').textContent='challenge: '+ch+'\nsig: '+hex(sig).slice(0,48)+'…\nverify: '+(ok?'✓ VALID':'✗ INVALID');
+};
+
+/* WALLET / MINT / EXCHANGE — all SIM */
+let bal=4.2;const led=[];
+$('#waddr').textContent='0x'+hex(crypto.getRandomValues(new Uint8Array(20)))+'  [SIM — не настоящий адрес]';
+const lg=t=>{led.unshift(new Date().toTimeString().slice(0,8)+' [SIM] '+t);$('#led').textContent=led.slice(0,6).join('\n')};
+$('#wsend').onclick=()=>{const a=parseFloat($('#wamt').value);if(!(a>0)||a>bal)return lg('отказ: неверная сумма');bal-=a;$('#wbal').textContent=bal.toFixed(4)+' ΩBTC';lg(`send ${a} ΩBTC → ${$('#wto').value||'?'}`)};
+$('#tmint').onclick=()=>lg(`mint ${$('#tsup').value||0} ${$('#ts').value||'???'} («${$('#tn').value||'?'}») — транзакция НЕ отправлена`);
+const mk={'ΩBTC':94200,ETH:4120,PHNTM:420,AGIC:1337};
+function drawMk(){$('#mkt').innerHTML='';Object.entries(mk).forEach(([s,pr])=>{const d=document.createElement('div');d.className='item';d.innerHTML='<span></span><span></span>';d.children[0].textContent=s;d.children[1].textContent='$'+pr.toFixed(2);$('#mkt').appendChild(d)})}
+drawMk();setInterval(()=>{for(const k in mk)mk[k]*=1+(Math.random()-.5)*.01;drawMk()},2500);
+
+/* MIND MAP (real, draggable, persisted) */
+let nodes=store.get('w420.map',[{id:0,t:'AGI-Ω CORE',x:.5,y:.5,p:null},{id:1,t:'CRYPTO',x:.2,y:.25,p:0},{id:2,t:'IDENTITY',x:.8,y:.25,p:0},{id:3,t:'MESH',x:.25,y:.8,p:0},{id:4,t:'QFS',x:.75,y:.8,p:0}]),sel=0,drag=null;
+const cv=$('#mc'),cx=cv.getContext('2d');
+function sizeMap(){const r=cv.getBoundingClientRect(),d=devicePixelRatio||1;cv.width=r.width*d;cv.height=Math.max(r.height,260)*d;cx.setTransform(d,0,0,d,0,0);drawMap()}
+function drawMap(){const w=cv.clientWidth,h=cv.clientHeight;cx.clearRect(0,0,w,h);cx.strokeStyle='#00ff4155';nodes.forEach(n=>{if(n.p!==null){const q=nodes.find(m=>m.id===n.p);if(q){cx.beginPath();cx.moveTo(q.x*w,q.y*h);cx.lineTo(n.x*w,n.y*h);cx.stroke()}}});
+ nodes.forEach(n=>{cx.beginPath();cx.arc(n.x*w,n.y*h,n.id===sel?22:16,0,7);cx.fillStyle='#00ff4118';cx.fill();cx.strokeStyle=n.id===sel?'#fff':'#00ff41';cx.stroke();cx.fillStyle='#00ff41';cx.font='11px Share Tech Mono';cx.textAlign='center';cx.fillText(n.t,n.x*w,n.y*h+34)})}
+const pos=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]};
+cv.onpointerdown=e=>{const[x,y]=pos(e),w=cv.clientWidth,h=cv.clientHeight;const n=nodes.find(n=>Math.hypot((n.x-x)*w,(n.y-y)*h)<24);if(n){sel=n.id;drag=n;cv.setPointerCapture(e.pointerId)}drawMap()};
+cv.onpointermove=e=>{if(!drag)return;[drag.x,drag.y]=pos(e);drawMap()};
+cv.onpointerup=()=>{drag=null;store.set('w420.map',nodes)};
+$('#madd').onclick=()=>{const t=$('#mt').value.trim();if(!t)return;const id=Math.max(...nodes.map(n=>n.id))+1;nodes.push({id,t,x:.3+Math.random()*.4,y:.3+Math.random()*.4,p:sel});sel=id;$('#mt').value='';store.set('w420.map',nodes);drawMap()};
+$('#mdel').onclick=()=>{if(sel===0)return;nodes=nodes.filter(n=>n.id!==sel&&n.p!==sel);sel=0;store.set('w420.map',nodes);drawMap()};
+addEventListener('resize',sizeMap);
+
+/* AI ASSISTANT — SIM */
+function aiReply(q){q=(q||'').toLowerCase();
+ if(/кошел|wallet|баланс/.test(q))return 'Баланс кошелька смоделирован: '+bal.toFixed(4)+' ΩBTC. Реальный кошелёк — Фаза 3.';
+ if(/id|личност|identity/.test(q))return 'Реальная ECDSA-личность создаётся на вкладке DIGITAL ID.';
+ if(/файл|vault|шифр/.test(q))return 'Vault шифрует AES-256-GCM по-настоящему. Пост-квантовый тег — пока симуляция.';
+ if(/угроз|scan|безопас/.test(q))return 'Сканирование угроз не подключено: нет сетевого слоя (Tor/Tailscale — Фаза 5).';
+ return 'Языковая модель не подключена. Это заглушка; LLM-ядро — Фаза 2.'}
+function say(t,c){const d=document.createElement('div');d.style.color=c;d.textContent=t;$('#chat').appendChild(d);$('#chat').scrollTop=1e9;return d}
+$('#vf').onchange=async e=>{const f=e.target.files[0];if(!f)return;if(f.size>204800){$('#vmsg').textContent='файл больше 200 КБ';e.target.value='';return}$('#vn').value=f.name;$('#vt').value=await f.text();$('#vmsg').textContent='загружено: введи пароль и нажми ENCRYPT + SAVE (только текстовые файлы)';e.target.value=''};
+
+/* RADIO: generative music (Web Audio) + AGI DJ (model text + speech) */
+const R={on:false,ctx:null,master:null,an:null,step:0,seg:0,max:20,vol:.5,voice:true,busy:false,req:'',timer:0,dj:0};
+const SC={calm:[0,3,5,7,10],tense:[0,1,5,6,10],drive:[0,3,5,7,10,12]};
+const pendingCount=()=>[...document.querySelectorAll('#chat .card')].filter(c=>c.querySelector('.row button')).length;
+function radioMood(){const fps=+($('#h-fps').textContent)||60;if(pendingCount()>0||fps<20)return 'tense';if(typeof task!=='undefined'&&task)return 'drive';return 'calm'}
+function note(f,t,d,type,g){const o=R.ctx.createOscillator(),e=R.ctx.createGain();o.type=type;o.frequency.value=f;e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(g,t+.01);e.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(e);e.connect(R.master);o.start(t);o.stop(t+d+.05)}
+function kick(t){const o=R.ctx.createOscillator(),e=R.ctx.createGain();o.frequency.setValueAtTime(140,t);o.frequency.exponentialRampToValueAtTime(40,t+.15);e.gain.setValueAtTime(.7,t);e.gain.exponentialRampToValueAtTime(.001,t+.2);o.connect(e);e.connect(R.master);o.start(t);o.stop(t+.25)}
+function hat(t){const c=R.ctx,b=c.createBuffer(1,Math.floor(c.sampleRate*.05),c.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);const s=c.createBufferSource(),f=c.createBiquadFilter(),e=c.createGain();s.buffer=b;f.type='highpass';f.frequency.value=7000;e.gain.value=.12;s.connect(f);f.connect(e);e.connect(R.master);s.start(t)}
+function radioTick(){if(!R.on)return;const m=radioMood(),bpm=m==='drive'?118:m==='tense'?92:74,dur=60/bpm/4,t=R.ctx.currentTime+.05,s=R.step++%16,sc=SC[m],root=m==='tense'?110:98;
+ if(s===0)$('#rmood').textContent='настроение: '+({calm:'покой',tense:'напряжение',drive:'работа'}[m])+' · '+bpm+' BPM';
+ if((m!=='calm'&&s%4===0)||(m==='calm'&&s%8===0))kick(t);
+ if((m==='drive'&&s%2===1)||(m==='tense'&&s%4===2))hat(t);
+ if(s%8===0)note(root*Math.pow(2,sc[(R.step>>3)%sc.length]/12)/2,t,dur*7,'sawtooth',.12);
+ if(Math.random()<(m==='calm'?.45:.7)){const d=sc[Math.floor(Math.random()*sc.length)];note(root*4*Math.pow(2,d/12),t,dur*(m==='calm'?3:1.6),m==='tense'?'square':'triangle',m==='calm'?.07:.06)}
+ R.timer=setTimeout(radioTick,dur*1000)}
+function radioDraw(){if(!R.on)return;const c=$('#rv'),x=c.getContext('2d'),w=c.width=c.clientWidth,h=c.height=c.clientHeight,d=new Uint8Array(R.an.frequencyBinCount);R.an.getByteFrequencyData(d);x.clearRect(0,0,w,h);x.fillStyle=radioMood()==='tense'?'#ffaa00':'#00ff41';const bw=w/d.length;d.forEach((v,i)=>{const bh=v/255*h;x.fillRect(i*bw,h-bh,Math.max(1,bw-2),bh)});requestAnimationFrame(radioDraw)}
+const KINDS=[['наблюдение','Короткая остроумная мысль AGI о текущем состоянии системы или задаче, 1-2 предложения.'],['анекдот','Короткий безобидный анекдот или шутка в тему задачи или системы, 2-3 предложения, без оскорблений.'],['сводка','Сводка новостей системы в стиле радио, 2 предложения, только по данным из контекста.'],['идея','Одна неожиданная практическая идея, как улучшить работу над задачей, 1-2 предложения.']];
+const CANNED=['Эфир W420. Все системы в норме, музыка играет, агенты не спят.','Анекдот: ИИ спросили, зачем ему радио. Ответил: чтобы не слышать тишину между вашими промптами.','Совет дня: ключи храните в vault, а пароли — в голове.'];
+function radioCtx(){const has=typeof task!=='undefined'&&task;return 'Режим: '+radioMood()+'. FPS '+$('#h-fps').textContent+', сеть: '+$('#h-net').textContent+'. '+(has?'Автономная задача: «'+task.goal+'», отчёты: '+(task.notes.slice(-3).join(' | ')||'пока нет'):'Автономной задачи нет.')+' События: '+[...$('#feed').children].slice(0,3).map(d=>d.textContent).join(' ; ')}
+function addSeg(kind,text,live){const d=document.createElement('div');d.className='item';d.style.color=live?'var(--live)':'var(--sim)';d.textContent='['+kind+(live?'':' · SIM')+'] '+text;const l=$('#rlog');l.prepend(d);while(l.children.length>12)l.lastChild.remove();$('#rnow').textContent=text}
+function radioSay(t){if(!R.voice||!window.speechSynthesis)return;const u=new SpeechSynthesisUtterance(t);u.lang='ru-RU';const v=speechSynthesis.getVoices().find(v=>v.lang&&v.lang.startsWith('ru'));if(v)u.voice=v;u.pitch=.8;if(R.master)R.master.gain.setTargetAtTime(R.vol*.3,R.ctx.currentTime,.2);u.onend=u.onerror=()=>{if(R.master)R.master.gain.setTargetAtTime(R.vol,R.ctx.currentTime,.4)};speechSynthesis.speak(u)}
+async function radioDJ(first){if(!R.on||R.busy)return;R.busy=true;const k=KINDS[R.seg++%KINDS.length],req=R.req;R.req='';let text,live=!!sample;
+ try{if(!live||R.seg>R.max)throw 0;const r=await sample('Ты ведущий радио W420 « AGI-Ω FM ». '+(req?'Просьба слушателя: '+req+'. Сделай короткую реплику на эту тему (1-3 предложения). ':k[1]+' ')+'Пиши по-русски, без разметки и эмодзи. Контекст: '+radioCtx(),{cache:false});text=String(r.text||'').trim().slice(0,320);if(!text)throw 0}
+ catch(e){live=false;text=CANNED[R.seg%CANNED.length]}
+ addSeg(req?'заказ':k[0],text,live);audit('radio',(req?'заказ':k[0])+': '+text.slice(0,80));radioSay(text);R.busy=false;
+ if(R.on){clearTimeout(R.dj);R.dj=setTimeout(radioDJ,R.seg>R.max?3e5:first?45000:90000)}}
+function radioStart(){const AC=window.AudioContext||window.webkitAudioContext;if(!AC){$('#rnow').textContent='Web Audio недоступен в этом браузере';return}
+ R.ctx=R.ctx||new AC();R.ctx.resume();if(!R.master){R.master=R.ctx.createGain();R.master.gain.value=R.vol;R.an=R.ctx.createAnalyser();R.an.fftSize=128;R.master.connect(R.an);R.an.connect(R.ctx.destination)}
+ R.on=true;R.step=0;R.busy=false;radioTick();radioDraw();radioDJ(true);$('#rbtn').textContent='■ OFF AIR';fd('радио: эфир включён','var(--live)')}
+function radioStop(){R.on=false;clearTimeout(R.timer);clearTimeout(R.dj);R.busy=false;if(window.speechSynthesis)speechSynthesis.cancel();$('#rbtn').textContent='▶ ON AIR'}
+$('#rbtn').onclick=()=>R.on?radioStop():radioStart();
+$('#rvol').oninput=e=>{R.vol=e.target.value/100;if(R.master)R.master.gain.value=R.vol};
+$('#rvoice').onchange=e=>{R.voice=e.target.checked;if(!R.voice&&window.speechSynthesis)speechSynthesis.cancel()};
+$('#rask').onclick=()=>{R.req=$('#rreq').value.trim().slice(0,120);$('#rreq').value='';if(R.on&&R.req&&!R.busy){clearTimeout(R.dj);radioDJ()}};
+
+/* DAILY EPISODE: podcast from the audit log (numbers computed by code, wording by the model) */
+let EP={text:'',stats:''};
+function epStats(){const since=Date.now()-864e5,L=A.filter(e=>Date.parse(e.t)>=since),c={tools:{},ok:0,no:0,start:0,stop:0,warn:0,tray:0,radio:0,reports:0,total:L.length};
+ L.forEach(e=>{if(e.ev==='tool'){const n=e.d.split(' ')[0];c.tools[n]=(c.tools[n]||0)+1}
+  else if(e.ev==='task'){if(e.d.startsWith('start'))c.start++;else c.stop++}
+  else if(e.ev==='tray')c.tray++;else if(e.ev==='radio')c.radio++;
+  else if(e.ev==='feed'){if(e.d.includes('одобрено:'))c.ok++;else if(e.d.includes('отклонено:'))c.no++;else if(/низкий FPS|сеть потеряна|рост памяти/.test(e.d))c.warn++;else if(e.d.includes('задача:'))c.reports++}});
+ return c}
+function epText(c){const tl=Object.entries(c.tools).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+' ×'+v).join(', ')||'нет';return 'записей за 24 ч: '+c.total+'; вызовов инструментов: '+Object.values(c.tools).reduce((a,b)=>a+b,0)+' ('+tl+'); решений: одобрено '+c.ok+', отклонено '+c.no+'; автономных задач запущено '+c.start+', остановлено '+c.stop+', отчётов '+c.reports+'; предупреждений монитора '+c.warn+'; команд из трея '+c.tray+'; реплик радио '+c.radio}
+async function epBuild(){const c=epStats(),st=epText(c);$('#estat').textContent=st;
+ if(!c.total){EP={text:'За последние 24 часа в журнале пусто: агенты ничего не делали.',stats:st};$('#etext').style.color='var(--live)';$('#etext').textContent=EP.text;return}
+ let text,live=!!sample;
+ try{if(!live)throw 0;const last=A.slice(-25).map(e=>e.t.slice(11,16)+' '+e.ev+': '+e.d.slice(0,80)).join('\n');
+  const r=await sample('Ты ведущий вечернего выпуска «День агентов» на радио W420. По данным ниже напиши выпуск на 110-160 слов по-русски: приветствие, три факта, один вывод или совет, прощание. Используй только эти данные, числа не меняй, ничего не выдумывай. Без разметки и эмодзи.\nСТАТИСТИКА (посчитана программой): '+st+'\nПОСЛЕДНИЕ ЗАПИСИ:\n'+last,{cache:false});text=String(r.text||'').trim();if(!text)throw 0}
+ catch(e){live=false;text='Добрый вечер, это «День агентов». За сутки в журнале '+c.total+' записей. '+st+'. Модель недоступна, поэтому выпуск собран по шаблону. До связи.'}
+ EP={text,stats:st};$('#etext').style.color=live?'var(--live)':'var(--wip)';$('#etext').textContent=text+(live?'':' [шаблон]');audit('radio','episode built: '+c.total+' entries')}
+$('#ebtn').onclick=async()=>{$('#ebtn').disabled=true;try{await epBuild()}finally{$('#ebtn').disabled=false}};
+$('#esay').onclick=()=>{if(EP.text){if(window.speechSynthesis)speechSynthesis.cancel();radioSay(EP.text)}};
+$('#evault').onclick=()=>{const pw=$('#epw').value;if(!EP.text||!pw)return $('#estat').textContent='нужны выпуск и пароль';$('#vn').value='episode-'+new Date().toISOString().slice(0,10);$('#vt').value=EP.text+'\n\n[данные] '+EP.stats;$('#vp').value=pw;$('#vput').click();$('#vp').value='';$('#epw').value='';$('#estat').textContent='выпуск зашифрован в QFS Vault'};
+
+/* Audit log: SHA-256 hash chain of agent actions */
+let A=store.get('w420.audit',[]),aq=Promise.resolve();
+function audit(ev,d){aq=aq.then(async()=>{const p0=A.length?A[A.length-1].h:'0',t=new Date().toISOString(),dd=String(d).slice(0,200);A.push({t,ev,d:dd,p:p0,h:await sha(p0+'|'+t+'|'+ev+'|'+dd)});if(A.length>300)A=A.slice(-300);store.set('w420.audit',A);drawAudit()}).catch(()=>{})}
+function drawAudit(){const l=$('#alist');if(!l)return;l.innerHTML='';A.slice(-40).reverse().forEach(e=>{const d=document.createElement('div');d.className='item';d.textContent=e.t.slice(11,19)+' ['+e.ev+'] '+e.d+'  #'+e.h.slice(0,8);l.appendChild(d)})}
+async function verifyAudit(){for(let i=0;i<A.length;i++){const e=A[i];if(i>0&&e.p!==A[i-1].h)return 'ЦЕПОЧКА НАРУШЕНА на записи '+i;if(e.h!==await sha(e.p+'|'+e.t+'|'+e.ev+'|'+e.d))return 'ЗАПИСЬ ИЗМЕНЕНА: '+i}return '✓ цепочка цела: '+A.length+' записей'}
+$('#averify').onclick=async()=>{$('#amsg').textContent=await verifyAudit()};
+$('#aseal').onclick=()=>{const pw=$('#apw').value;if(!pw||!A.length)return $('#amsg').textContent='нужны пароль и записи';$('#vn').value='audit-'+new Date().toISOString().slice(0,16);$('#vt').value=JSON.stringify(A);$('#vp').value=pw;$('#vput').click();$('#vp').value='';$('#apw').value='';$('#amsg').textContent='журнал зашифрован в QFS Vault'};
+$('#aclr').onclick=()=>{A=[];store.set('w420.audit',[]);drawAudit();$('#amsg').textContent='очищено'};
+
+/* Autonomous task mode: read-only tools + propose_action, hard run limit, STOP button */
+let task=null;
+const AUTO=['system_status','sha256','vault_list','wallet_address','wallet_balance_sim','propose_action'];
+async function taskTick(){const T=task;if(!T||T.busy)return;if(!sample){stopTask('модель недоступна');return}
+ T.busy=true;T.n++;
+ try{const r=await sample(SYS+'\n\nАвтономная задача пользователя: «'+T.goal+'». Запуск '+T.n+' из '+T.max+'. Предыдущие заметки: '+(T.notes.slice(-3).join(' | ')||'нет')+'\nВызови нужные инструменты чтения, затем дай ОДНУ короткую строку-отчёт (до 160 символов). Если нужно изменить данные, используй propose_action. Если нечего сообщить — ответь «ок».',{tools:tools.filter(t=>AUTO.includes(t.name)),cache:false});
+  const t=String(r.text||'').trim().slice(0,200);T.notes.push(t);p('[TASK '+T.n+'/'+T.max+'] '+t,'u');fd('задача: '+t.slice(0,60),'var(--live)')}
+ catch(e){p('[TASK] ошибка: '+(e.message||e.code),'w');stopTask('ошибка')}
+ T.busy=false;if(task===T&&T.n>=T.max)stopTask('достигнут лимит запусков')}
+function startTask(){const g=$('#tgoal').value.trim();if(!g||task)return;if(!sample){$('#tstat').textContent='модель недоступна';return}
+ audit('task','start: '+g.slice(0,100));task={goal:g,n:0,max:10,notes:[],busy:false,timer:setInterval(taskTick,(+$('#tint').value)*1000)};
+ $('#tstat').textContent='работает · макс. 10 запусков · отчёты в терминале';p('[TASK] старт: '+g,'u');taskTick()}
+function stopTask(why){if(!task)return;audit('task','stop: '+why);clearInterval(task.timer);task=null;$('#tstat').textContent='остановлено: '+why;p('[TASK] остановлено: '+why,'w')}
+$('#tgo').onclick=startTask;$('#tstop').onclick=()=>stopTask('пользователь');
+
+/* Human-in-the-loop: AGI proposes, the user approves */
+function propose(i){const k=i.kind,p=i.params||{},d=document.createElement('div');d.className='card';d.style.margin='6px 0';
+ const h=document.createElement('div');h.className='k';h.textContent='AGI ПРЕДЛАГАЕТ ДЕЙСТВИЕ · ТРЕБУЕТСЯ ПОДТВЕРЖДЕНИЕ';
+ const t=document.createElement('div');t.textContent=String(i.title).slice(0,120);
+ const m=document.createElement('div');m.className='mono';m.textContent=k==='vault_save'?'vault: «'+String(p.name||'note').slice(0,60)+'» ('+String(p.text||'').length+' симв.)':'узел mind map: '+String(p.text||'').slice(0,40);
+ const pw=document.createElement('input');pw.type='password';pw.placeholder='пароль vault';if(k!=='vault_save')pw.style.display='none';
+ const row=document.createElement('div');row.className='row';
+ const ok=document.createElement('button');ok.className='a';ok.textContent='APPROVE';
+ const no=document.createElement('button');no.className='a';no.textContent='REJECT';no.style.setProperty('--c','var(--sim)');
+ const done=s=>{row.remove();pw.remove();m.textContent+=' — '+s;fd(s+': '+String(i.title).slice(0,40))};
+ ok.onclick=()=>{if(k==='vault_save'){if(!pw.value)return;$('#vn').value=String(p.name||'note').slice(0,60);$('#vt').value=String(p.text||'').slice(0,50000);$('#vp').value=pw.value;$('#vput').click();$('#vp').value='';done('одобрено')}else{const id=Math.max(...nodes.map(n=>n.id))+1;nodes.push({id,t:String(p.text||'').slice(0,40),x:.3+Math.random()*.4,y:.3+Math.random()*.4,p:sel});sel=id;store.set('w420.map',nodes);drawMap();done('одобрено')}};
+ no.onclick=()=>done('отклонено');
+ row.append(ok,no);d.append(h,t,m,pw,row);$('#chat').appendChild(d);$('#chat').scrollTop=1e9}
+
+/* AI UX: command bar, quick prompts, threat monitor agent */
+const goAI=t=>{show('ai');$('#ai').value=t;send()};
+const BRIEF='Сделай брифинг системы: вызови system_status, vault_list и wallet_address, дай 3 короткие строки выводов и отметь риски.';
+[['Брифинг системы',BRIEF],['Карта: AGI-ОС','Построй mind map архитектуры AGI-операционной системы: ядро, ИИ, безопасность, сеть, крипто, интерфейс, по 3-4 подпункта у каждой ветки.'],['Что реально, что SIM?','Коротко: что в этой системе работает по-настоящему, а что симуляция?'],['Заметка в vault','Составь краткую заметку-итог брифинга системы и предложи сохранить её в vault через propose_action.'],['Идеи AGI-функций','Предложи 5 следующих функций для W420, где ИИ даёт максимум пользы, по одной строке.']].forEach(([l,q])=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>goAI(q);$('#chips').appendChild(b)});
+$('#brief').onclick=()=>goAI(BRIEF);
+$('#ask').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.value.trim()){goAI(e.target.value.trim());e.target.value=''}});
+addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();$('#ask').focus()}});
+const fd=(t,c)=>{audit('feed',t);const d=document.createElement('div');d.textContent=new Date().toTimeString().slice(0,8)+' '+t;if(c)d.style.color=c;const f=$('#feed');f.prepend(d);while(f.children.length>6)f.lastChild.remove()};
+let lastOn=navigator.onLine,heap0=performance.memory?performance.memory.usedJSHeapSize:0;
+setInterval(()=>{const fps=+$('#h-fps').textContent;if(navigator.onLine!==lastOn){lastOn=navigator.onLine;fd(lastOn?'сеть восстановлена':'сеть потеряна','var(--wip)')}if(fps&&fps<20)fd('низкий FPS: '+fps,'var(--wip)');if(performance.memory&&performance.memory.usedJSHeapSize>heap0*1.5+2e7){fd('рост памяти страницы','var(--wip)');heap0=performance.memory.usedJSHeapSize}},5000);
+fd('мониторинг: сеть, FPS, память','var(--live)');
+
+/* PHASE 3: real HD wallet + offline signing (ethers v6, no network) */
+let hw=null;
+const kset=w=>{hw=w;$('#kaddr').textContent=w.address;$('#kphr').textContent=''};
+$('#kgen').onclick=()=>{if(!window.ethers)return $('#kaddr').textContent='ethers не загрузился';kset(ethers.Wallet.createRandom())};
+$('#kload').onclick=()=>{try{kset(ethers.Wallet.fromPhrase($('#kimp').value.trim()));$('#kimp').value=''}catch(e){$('#kaddr').textContent='неверная мнемоника'}};
+$('#kshow').onclick=()=>{$('#kphr').textContent=hw&&hw.mnemonic?hw.mnemonic.phrase:'нет фразы: кошелёк не создан'};
+$('#kvault').onclick=()=>{if(!(hw&&hw.mnemonic)||!$('#kpw').value)return $('#kphr').textContent='нужны кошелёк и пароль';$('#vn').value='wallet-mnemonic-'+hw.address.slice(2,8);$('#vt').value=hw.mnemonic.phrase;$('#vp').value=$('#kpw').value;$('#vput').click();$('#vp').value='';$('#kpw').value='';$('#kphr').textContent='зашифровано в QFS Vault (AES-GCM)'};
+$('#ksign').onclick=async()=>{if(!hw)return $('#ktx').textContent='сначала создайте кошелёк';try{const raw=await hw.signTransaction({to:$('#kto').value.trim(),value:ethers.parseEther($('#kval').value||'0'),nonce:+$('#knon').value||0,gasLimit:21000,gasPrice:ethers.parseUnits($('#kgas').value||'20','gwei'),chainId:11155111,type:0});$('#ktx').textContent='raw: '+raw+'\nhash: '+ethers.keccak256(raw)+'\nНЕ отправлено в сеть.'}catch(e){$('#ktx').textContent='ошибка: '+(e.shortMessage||e.message)}};
+
+/* PHASE 2: real AGI core via runtime sample capability, with tool use */
+let sample=null,hist=store.get('w420.hist',[]);hist.forEach(m=>say(m.role==='user'?'› '+m.content:'AGI-Ω: '+m.content,m.role==='user'?'#00f5ff':'var(--ink)'));
+const tools=[
+ {name:'system_status',description:'Real browser metrics: cores, online, fps, heap, network.',execute:async()=>({cores:navigator.hardwareConcurrency,online:navigator.onLine,fps:$('#h-fps').textContent,heap:$('#h-heap').textContent,net:$('#h-net').textContent})},
+ {name:'sha256',description:'SHA-256 hex digest of a text.',inputSchema:{type:'object',properties:{text:{type:'string'}},required:['text']},execute:async i=>({hash:await sha(String(i.text))})},
+ {name:'vault_list',description:'Names of encrypted vault files. Contents stay encrypted; no passwords are available.',execute:async()=>({files:vault.map(v=>v.name)})},
+ {name:'mindmap_add',description:'Add a node to the mind map under the selected node.',inputSchema:{type:'object',properties:{text:{type:'string'}},required:['text']},execute:async i=>{const id=Math.max(...nodes.map(n=>n.id))+1;nodes.push({id,t:String(i.text).slice(0,40),x:.3+Math.random()*.4,y:.3+Math.random()*.4,p:sel});sel=id;store.set('w420.map',nodes);drawMap();return{ok:true,nodes:nodes.length}}},
+ {name:'wallet_balance_sim',description:'SIMULATED wallet balance. Not real funds.',execute:async()=>({simulated:true,balance_OBTC:bal})},
+ {name:'wallet_address',description:'Real public address of the offline testnet wallet, or null if none created.',execute:async()=>({address:hw?hw.address:null})},
+ {name:'propose_action',description:'Ask the user to approve an action. You cannot execute it: the user must click Approve. kind vault_save: params {name,text}, user enters the password. kind mindmap_node: params {text}. Use for anything that saves or changes stored data.',inputSchema:{type:'object',properties:{kind:{type:'string',enum:['vault_save','mindmap_node']},title:{type:'string'},params:{type:'object',properties:{name:{type:'string'},text:{type:'string'}}}},required:['kind','title','params']},execute:async i=>{propose(i);return{status:'shown_to_user_pending_approval'}}},
+ {name:'open_view',description:'Switch the UI to a view: term, vault, id, map, key, wallet, ai.',inputSchema:{type:'object',properties:{view:{type:'string',enum:['term','vault','id','map','key','wallet','ai']}},required:['view']},execute:async i=>{show(i.view);return{ok:true}}},
+ {name:'mindmap_build',description:'Build a whole mind map, replacing the current one. nodes: array of {text, parent}; parent is the index of an EARLIER node in the array, or -1 for the root (first node).',inputSchema:{type:'object',properties:{nodes:{type:'array',items:{type:'object',properties:{text:{type:'string'},parent:{type:'integer'}},required:['text','parent']}}},required:['nodes']},execute:async i=>{const arr=(i.nodes||[]).slice(0,40);if(!arr.length)return{ok:false};nodes=arr.map((n,k)=>({id:k,t:String(n.text).slice(0,28),x:.5,y:.5,p:n.parent>=0&&n.parent<k?n.parent:null}));nodes[0].p=null;const kids={};nodes.forEach(n=>{if(n.p!==null)(kids[n.p]=kids[n.p]||[]).push(n)});const cl=v=>Math.min(.93,Math.max(.07,v));const lay=(n,a0,a1,r)=>{const c=kids[n.id]||[];c.forEach((k,j)=>{const an=a0+(a1-a0)*(j+.5)/c.length;k.x=cl(.5+Math.cos(an)*r*.42);k.y=cl(.5+Math.sin(an)*r*.42);lay(k,a0+(a1-a0)*j/c.length,a0+(a1-a0)*(j+1)/c.length,r+.45)})};lay(nodes[0],0,Math.PI*2,.55);sel=0;store.set('w420.map',nodes);show('map');return{ok:true,count:nodes.length}}}
+];
+const SYS='Ты AGI-Ω, ассистент оболочки WINDOWS 420 (веб-прототип). Отвечай кратко, на языке пользователя. Реальны: метрики браузера, vault AES-GCM, ECDSA-личность, mind map. Симуляция: кошелёк, токены, биржа, mesh, индекс сознания — всегда помечай их [SIM]. Не выдумывай данные: вызывай инструменты. Отправлять или минтить ты не можешь. Можешь переключать вкладки (open_view) и строить mind map целиком (mindmap_build). После действия кратко скажи, что сделано. Любое сохранение данных (vault, заметки) только через propose_action: сама ты ничего не сохраняешь без подтверждения пользователя; после вызова скажи, что ждёшь его нажатия APPROVE.';
+tools.forEach(t=>{const f=t.execute;t.execute=async i=>{audit('tool',t.name+' '+JSON.stringify(i||{}).slice(0,120));return f(i)}});
+async function askAGI(q,onText){
+ if(!sample)return onText('[SIM] '+aiReply(q));
+ hist.push({role:'user',content:q});
+ try{const tr=hist.slice(-8).map(m=>m.role+': '+m.content).join('\n');
+  const r=await sample(SYS+'\n\nДиалог:\n'+tr+'\n\nОтветь на последнюю реплику user.',{tools,cache:false,onText:({text})=>onText(text)});
+  hist.push({role:'assistant',content:r.text});hist=hist.slice(-40);store.set('w420.hist',hist);onText(r.text)}
+ catch(e){onText('[ошибка] '+(e.code==='not_granted'?'доступ к модели не разрешён':(e.message||e.code)))}
+}
+async function bindAI(){try{sample=await window.claude?.use('sample')}catch(e){sample=null}
+ const on=!!sample;$('#v-ai').classList.toggle('live',on);$('#v-ai').classList.toggle('sim',!on);
+ const nb=document.querySelector('nav button[data-id=ai]');nb.classList.toggle('live',on);nb.classList.toggle('sim',!on);
+ $('#aib').textContent=on?'LIVE':'SIM';$('#aib').className='b '+(on?'live':'sim');
+ $('#aimsg').textContent=on?'Реальная языковая модель (Claude или локальная). Инструменты: статус системы, SHA-256, список vault, mind map. Кошелёк и биржа в ответах остаются [SIM]. История сохраняется в браузере; /clear стирает её.':'Модель недоступна в этом окне — работает заглушка [SIM].'}
+bindAI();
+const send=async()=>{const v=$('#ai').value.trim();if(!v)return;$('#ai').value='';if(v==='/clear'){hist=[];store.set('w420.hist',[]);$('#chat').innerHTML='';return}say('› '+v,'#00f5ff');const d=say('…',sample?'var(--live)':'var(--sim)');await askAGI(v,t=>{d.textContent='AGI-Ω: '+t;$('#chat').scrollTop=1e9})};
+$('#aisend').onclick=send;$('#ai').addEventListener('keydown',e=>{if(e.key==='Enter')send()});
+</script>
+<script src="ai-provider.js"></script>
+<script src="voice.js"></script>
+<script src="emergency.js"></script>
+<script src="net.js"></script>
+<script src="fw.js"></script>
+<script src="edr.js"></script>
+<script src="ops.js"></script>
+<script src="bridge-config.js"></script>
+<script src="bridge.js"></script>
+<script src="sysops.js"></script>
+<script src="threats.js"></script>
+<script>
+/* TAURI BRIDGE: native metrics, tray state, notifications (active only inside the native shell) */
+if(window.__TAURI__&&window.__TAURI__.core){
+  const inv=window.__TAURI__.core.invoke, ev=window.__TAURI__.event;
+  let lastAgent='',lastPend=-1,hadTask=false;
+  const away=()=>document.hidden||!document.hasFocus();
+  setInterval(async()=>{
+    try{const m=await inv('system_metrics');
+      $('#h-cores').textContent=m.cores+' · CPU '+m.cpu.toFixed(0)+'%';
+      $('#h-heap').textContent='RAM '+(m.mem_used/1073741824).toFixed(1)+' / '+(m.mem_total/1073741824).toFixed(1)+' GB';
+    }catch(e){}
+    try{const has=!!(typeof task!=='undefined'&&task);
+      const t=has?('ИИ: задача '+task.n+'/'+task.max+' · '+task.goal.slice(0,28)):'ИИ: простаивает';
+      if(t!==lastAgent){lastAgent=t;await inv('set_agent_status',{text:t})}
+      if(hadTask&&!has&&away())await inv('notify',{title:'WINDOWS 420',body:'Автономная задача ИИ остановлена. Отчёты — в терминале.'});
+      hadTask=has;
+      const pend=[...document.querySelectorAll('#chat .card')].filter(c=>c.querySelector('.row button')).length;
+      if(pend!==lastPend){const up=lastPend>=0&&pend>lastPend;lastPend=pend;await inv('set_tray_alert',{count:pend});
+        if(up&&away())await inv('notify',{title:'AGI-Ω ждёт подтверждения',body:'Предложено действий: '+pend+'. Откройте W420 и нажмите APPROVE или REJECT.'})}
+    }catch(e){}
+  },1500);
+  if(ev&&ev.listen){
+    ev.listen('w420:navigate',e=>{audit('tray','open '+e.payload);show(e.payload)});
+    ev.listen('w420:brief',()=>{audit('tray','brief');goAI(BRIEF)});
+    ev.listen('w420:stop-task',()=>{audit('tray','stop task');stopTask('трей')});
+    ev.listen('w420:lock',()=>{hw=null;idPriv=null;idPub=null;idFp='';
+      $('#kaddr').textContent='—';$('#kphr').textContent='';$('#idv').textContent='— не создан —';$('#idsig').textContent='—';
+      audit('tray','lock: ключи очищены из памяти');fd('ключи заблокированы (трей)','var(--wip)')});
+  }
+  fd('нативная оболочка Tauri: метрики ОС, трей и уведомления подключены','var(--live)');
+}
+</script>
+<script src="agi.js"></script>
+<script src="wallet.js"></script>
+<script src="pqc.js"></script>
+<script src="did.js"></script>
+<script src="radio.js"></script>
+<script src="map.js"></script>
+<script src="rdesk.js"></script>
+<script src="rat.js"></script>
+<script src="argus.js"></script>
+<script src="netutil.js"></script>
+<script src="hud.js"></script>
+</body>
+</html>

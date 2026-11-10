@@ -1,0 +1,13 @@
+target/
+.cache/
+*.db
+*.db-*
+.w420/
+.github/
+*.log
+packaging/
+*.deb
+*.rpm
+*.iso
+*.AppImage
+node_modules/

@@ -1,0 +1,7 @@
+{
+  "name": "windows420",
+  "version": "0.2.0",
+  "private": true,
+  "scripts": { "tauri": "tauri" },
+  "devDependencies": { "@tauri-apps/cli": "^2" }
+}

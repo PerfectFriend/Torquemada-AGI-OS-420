@@ -1,0 +1,56 @@
+[package]
+name = "w420"
+version = "0.2.0"
+edition = "2021"
+rust-version = "1.90"
+
+[lib]
+name = "w420_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri-plugin-http = "2"
+arti-client = { version = "=0.46.0", optional = true, default-features = false, features = ["tokio", "rustls", "compression", "onion-service-client", "static-sqlite"] }
+futures = { version = "0.3", optional = true }
+tor-rtcompat = { version = "=0.46.0", optional = true, default-features = false }
+tokio = { version = "1", optional = true, features = ["net", "io-util"] }
+sysinfo = "0.30"
+sha2 = "0.10"
+uuid = { version = "1", features = ["v4"] }
+w420-core = { path = "../../crates/w420-core" }
+w420-ai = { path = "../../crates/w420-ai" }
+rusqlite = { version = "0.36", features = ["bundled"] }
+chrono = "0.4"
+# Этап 20: кошелёк REAL (secp256k1/BIP-39/BIP-32, подпись legacy-транзакций, AES-256-GCM keyring)
+reqwest = { workspace = true, features = ["json"] }
+k256 = { workspace = true }
+p256 = { workspace = true }
+signature = { workspace = true }
+png = { workspace = true }
+tiny-bip39 = { workspace = true }
+sha3 = { workspace = true }
+hmac = { workspace = true }
+hkdf = { workspace = true }
+ml-kem = { workspace = true }
+rlp = { workspace = true }
+hex = { workspace = true }
+rand = { workspace = true }
+aes-gcm = { workspace = true }
+pbkdf2 = { workspace = true }
+zeroize = { workspace = true }
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-single-instance = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-notification = "2"
+
+[features]
+default = ["embedded-tor"]
+# Embedded Tor (Arti): large dependency tree; build with --no-default-features to leave it out
+embedded-tor = ["dep:arti-client", "dep:futures", "dep:tokio", "dep:tor-rtcompat"]

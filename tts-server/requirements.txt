@@ -1,0 +1,6 @@
+# torch and torchaudio are installed separately by the installer (CPU or CUDA build, versions pinned below 2.9:
+# coqui-tts 0.28 refuses to import with torch >= 2.9 unless torchcodec is present)
+coqui-tts==0.28.0
+fastapi>=0.110
+uvicorn>=0.29
+numpy>=1.26

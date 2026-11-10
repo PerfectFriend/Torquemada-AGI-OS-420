@@ -1,0 +1,15 @@
+[package]
+name = "tts-rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }
+
+[[bin]]
+name = "tts-rust"
+path = "src/main.rs"

@@ -1,0 +1,91 @@
+{
+  "_note": "Pinned sidecar binaries. SHA-256 values were computed from the downloaded files and matched against the digests GitHub publishes on the release page. To update: change version/urls, run fetch-sidecars with --update-lock after checking the digests yourself.",
+  "sing-box": {
+    "version": "1.14.3",
+    "source": "https://github.com/SagerNet/sing-box/tree/v1.14.3",
+    "license": "GPL-3.0-or-later with additional terms (see licenses/sing-box-LICENSE.txt)",
+    "assets": {
+      "x86_64-unknown-linux-gnu": {
+        "file": "sing-box-1.14.3-linux-amd64.tar.gz",
+        "sha256": "e2bdf179c15a3652955dc44867e33ca0965c9c9b91b34267dcc5a5d639a5feee"
+      },
+      "aarch64-unknown-linux-gnu": {
+        "file": "sing-box-1.14.3-linux-arm64.tar.gz",
+        "sha256": "29dae24d76bea3bc62d07dd3e60cfc12003de7debbd6b768df9be9c68360174e"
+      },
+      "x86_64-apple-darwin": {
+        "file": "sing-box-1.14.3-darwin-amd64.tar.gz",
+        "sha256": "6d002b74d03b478547349cc10af89e007868596e5aa931816d45da9f544715a9"
+      },
+      "aarch64-apple-darwin": {
+        "file": "sing-box-1.14.3-darwin-arm64.tar.gz",
+        "sha256": "0360ce634a04c26a6b4fd957517987bb4f6c8950f63435ce3c5af2fcae5860c5"
+      },
+      "x86_64-pc-windows-msvc": {
+        "file": "sing-box-1.14.3-windows-amd64.zip",
+        "sha256": "d8b86ef58936dba9230ec6a57ffa4243933f3c14ef4809828b6c553440ed1518"
+      },
+      "aarch64-pc-windows-msvc": {
+        "file": "sing-box-1.14.3-windows-arm64.zip",
+        "sha256": "195b35424c6e3f5913954c7f08c5d8ba2d2199f6d18eb27a3972a5a29cdaa78c"
+      }
+    },
+    "url_base": "https://github.com/SagerNet/sing-box/releases/download/v1.14.3/"
+  },
+  "trivy": {
+    "version": "0.76.1",
+    "source": "https://github.com/aquasecurity/trivy/tree/v0.76.1",
+    "license": "Apache-2.0",
+    "assets": {
+      "x86_64-unknown-linux-gnu": {
+        "file": "trivy_0.76.1_Linux-64bit.tar.gz",
+        "sha256": "c7cbe3137fb8a48a17574bede3dd6beb16742d1e9772929940fc90082c39d9c0"
+      },
+      "aarch64-unknown-linux-gnu": {
+        "file": "trivy_0.76.1_Linux-ARM64.tar.gz",
+        "sha256": "e174dff2a6dba5e3ae41f8d0537a6324405bd08132497340304c6b20e0f16a1f"
+      },
+      "x86_64-apple-darwin": {
+        "file": "trivy_0.76.1_macOS-64bit.tar.gz",
+        "sha256": "7aa762eacd582052d053b62dcf972a1ab058abe39a57ccae234ed8894945b6b7"
+      },
+      "aarch64-apple-darwin": {
+        "file": "trivy_0.76.1_macOS-ARM64.tar.gz",
+        "sha256": "11a9b6cd2752011b54f01ea4bd0dbfa9f0c41dc6538d5a3f9d23955f471bf4e5"
+      },
+      "x86_64-pc-windows-msvc": {
+        "file": "trivy_0.76.1_windows-64bit.zip",
+        "sha256": "1051f49cb22d5284f43425f72aad9cda63ca12ceb92e7caa06903490c82dc9bf"
+      }
+    },
+    "url_base": "https://github.com/aquasecurity/trivy/releases/download/v0.76.1/"
+  },
+  "gitleaks": {
+    "version": "8.30.1",
+    "source": "https://github.com/gitleaks/gitleaks/tree/v8.30.1",
+    "license": "MIT",
+    "assets": {
+      "x86_64-unknown-linux-gnu": {
+        "file": "gitleaks_8.30.1_linux_x64.tar.gz",
+        "sha256": "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+      },
+      "aarch64-unknown-linux-gnu": {
+        "file": "gitleaks_8.30.1_linux_arm64.tar.gz",
+        "sha256": "e4a487ee7ccd7d3a7f7ec08657610aa3606637dab924210b3aee62570fb4b080"
+      },
+      "x86_64-apple-darwin": {
+        "file": "gitleaks_8.30.1_darwin_x64.tar.gz",
+        "sha256": "dfe101a4db2255fc85120ac7f3d25e4342c3c20cf749f2c20a18081af1952709"
+      },
+      "aarch64-apple-darwin": {
+        "file": "gitleaks_8.30.1_darwin_arm64.tar.gz",
+        "sha256": "b40ab0ae55c505963e365f271a8d3846efbc170aa17f2607f13df610a9aeb6a5"
+      },
+      "x86_64-pc-windows-msvc": {
+        "file": "gitleaks_8.30.1_windows_x64.zip",
+        "sha256": "d29144deff3a68aa93ced33dddf84b7fdc26070add4aa0f4513094c8332afc4e"
+      }
+    },
+    "url_base": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/"
+  }
+}
