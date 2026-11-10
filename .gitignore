@@ -12,3 +12,4 @@ packaging/
 *.AppImage
 node_modules/
 app/src-tauri/binaries/
+w420
