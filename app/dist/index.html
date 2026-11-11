@@ -205,6 +205,15 @@ section.view::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;
     </div>
     <div id="madre-out" class="mono" style="margin-top:6px;opacity:.85;white-space:pre-wrap"></div>
   </div>
+  <div class="card live" style="margin-top:8px"><div class="k">ЗДОРОВЬЕ ХОСТОВ · hosts_health (score 0-100) <span class="b live">LIVE</span></div>
+    <div class="row">
+      <button class="a" id="hl-refresh">ОБНОВИТЬ ВСЕ</button>
+      <input id="hl-id-in" placeholder="id хоста" style="max-width:160px">
+      <button class="a" id="hl-one">ПРОВЕРИТЬ ОДИН</button>
+      <span class="mono" id="hl-stat">—</span>
+    </div>
+    <div id="hl-out" class="mono" style="margin-top:6px;opacity:.9"></div>
+  </div>
   <div class="card live" style="margin-top:8px"><div class="k">SIEM · СОБЫТИЯ · ИНЦИДЕНТЫ <span class="b live">LIVE</span></div>
     <div class="row">
       <button class="a" id="siem-ingest">INGEST</button>
@@ -718,6 +727,7 @@ if(window.__TAURI__&&window.__TAURI__.core){
 <script src="taskext.js"></script>
 <script src="fmgr.js"></script>
 <script src="madre.js"></script>
+<script src="health.js"></script>
 <script src="hud.js"></script>
 </body>
 </html>

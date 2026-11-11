@@ -77,10 +77,12 @@ native-only) → `cargo test --workspace` (рост счётчика) → `cargo
 - `systool_list/add/remove` (команда + аргументы + рабочая директория + целевой хост), `systool_run(id, host_id?)` — вывод в терминал; реестр инструментов в SQLite/файле.
 - UI: конструктор System Tool в настройках + запуск из карточки хоста.
 
-## Этап 38 — Финал паритета
+## Этап 38 — Финал паритета — ✅ DONE 2026-11-11
 - Dashboard здоровья хоста: `hosts_health(host_id)` (сводка: CPU/RAM/disk/services/last events/EDR-статус → score), карточка health в UI.
 - Полный аудит паритета по `audit-dameware-parity.md`: цель 28/28 (полные+частичные закрыты), 0 регрессий (тесты растут от 156), wiring 1:1, SIM-плашки только честные.
 - Пересборка `.deb`/`.rpm`/ISO, итоговый отчёт в 252, обновление `W420_TECH_SPEC.md` (раздел 8 backlog → новые этапы 27–38).
+
+- **Сделано:** `health.rs` — `hosts_health(host_id)` / `hosts_health_all()`: метрики по SSH (uptime/free/df/systemctl --failed) + локальные SIEM/EDR события по IP хоста, score 0..100 (HEALTHY/OK/DEGRADED/CRITICAL/OFFLINE) + вердикт Матери (свой/чужой по allowlist). UI `health.js` — карточка «ЗДОРОВЬЕ ХОСТОВ» в v-net. Тесты +6 (парсеры load/mem/disk/failed, score offline/healthy/degraded, монотонность). Workspace: 188 passed, 0 failed. build exit 0.
 
 ## Что сознательно НЕ копируем у DameWare
 - Лицензионный сервер/центральное лицензирование (у нас open, без лицензий).
