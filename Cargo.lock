@@ -8491,6 +8491,7 @@ dependencies = [
  "hex",
  "hkdf",
  "hmac",
+ "ipnet",
  "k256",
  "ldap3",
  "ml-kem",
