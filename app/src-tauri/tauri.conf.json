@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "TorquemadaAGI",
+  "productName": "Torquemada228AGI",
   "version": "0.2.0",
   "identifier": "dev.torquemada.agi",
   "build": {
@@ -11,7 +11,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "TorquemadaAGI — Cybersecurity AI OS",
+        "title": "Torquemada 228 AGI — Cybersecurity AI OS",
         "width": 1280,
         "height": 800,
         "visible": false
