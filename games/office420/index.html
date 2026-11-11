@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Офис на 420 — квест</title>
+<style>
+  html,body{margin:0;background:#050805;color:#39ff6a;font-family:'Courier New',monospace;overflow:hidden}
+  #wrap{display:flex;flex-direction:column;align-items:center}
+  canvas{background:#0a0f0a;border:2px solid #1f5c2e;cursor:crosshair;width:960px;height:540px;flex:none}
+  #hud{width:960px;display:flex;gap:12px;padding:6px;font-size:14px;align-items:center;flex-wrap:wrap}
+  .perso{padding:4px 10px;border:1px solid #1f5c2e;border-radius:4px;cursor:pointer;user-select:none}
+  .perso.active{background:#39ff6a;color:#050805;font-weight:bold}
+  #msg{width:960px;min-height:22px;padding:4px;font-size:14px;color:#b6ffc9}
+  #inv span{border:1px dashed #39ff6a;padding:2px 6px;margin-right:6px;border-radius:4px}
+  #score{margin-left:auto}
+  #start{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:rgba(3,8,4,.92);z-index:5;cursor:pointer}
+  #start h1{color:#39ff6a;text-shadow:0 0 12px #39ff6a}
+  #end{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;background:rgba(3,8,4,.94);z-index:6;text-align:center}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="hud">
+    <span>Перс: <span class="perso active" data-p="0">1 Сисадмин 🔧</span><span class="perso" data-p="1">2 Дима 💼</span><span class="perso" data-p="2">3 Чех 🍻</span><span class="perso" data-p="3">4 Мадре 🛡</span></span>
+    <span id="inv">Инвентарь: <span id="invlist">пусто</span></span>
+    <span id="score">Очки: 0 | Секреты: 0/3</span>
+  </div>
+  <canvas id="c" width="960" height="540"></canvas>
+  <div id="msg">Кликни на предметы. Смена перса — клавиши 1-4. Музыка — M.</div>
+</div>
+<div id="start"><h1>ОФИС НА 420</h1><p>инди-квест про сисадмина, чехов и Madre Torquemada</p><p>▶ КЛИК — начать (включится чиптюн)</p></div>
+<div id="end"><h1>БЕЛЫЕ КРОЛИКИ ПОБЕДИЛИ 🐇</h1><p id="endtext"></p><p>Чужие пакеты дропнуты на релаксе. Madre Torquemada довольна.</p><p>Очки: <span id="endscore"></span> · Секреты: <span id="endsec"></span></p><p>▶ КЛИК — играть снова</p></div>
+<script>
+"use strict";
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const msg=document.getElementById('msg');
+const PERS=[
+ {name:'Сисадмин',ab:'🔧 Терминал: чинит, взламывает, оживляет',color:'#39ff6a'},
+ {name:'Дима',ab:'💼 Приказ: пугает охрану, выбивает премию',color:'#ffd23f'},
+ {name:'Чех',ab:'🍻 Тост: отвлекает всех на дискотеку',color:'#4fc3ff'},
+ {name:'Мадре',ab:'🛡 Дроп пакетов: чужие пакеты — в дроп',color:'#ff6ad5'}];
+let perso=0, scene=0, score=0, secrets=0, inv=[], flags={}, packets=[], running=false, muted=false;
+const SECRETS=[['🃏 Косынка','менеджер играл в косынку'],['💾 Золотая дискета','образ на 120 станций'],['💵 100$ от Димы','премия за экономию 104к']];
+function say(t){msg.textContent=t;}
+function addInv(i){if(!inv.includes(i))inv.push(i);renderInv();}
+function renderInv(){document.getElementById('invlist').textContent=inv.join(' ')||'пусто';
+ document.getElementById('score').textContent=`Очки: ${score} | Секреты: ${secrets}/3`;}
+function addSecret(i){if(!flags['sec'+i]){flags['sec'+i]=1;secrets++;score+=50;say('🔑 Секрет найден: '+SECRETS[i][0]+' — '+SECRETS[i][1]);}else say('Этот секрет уже нашли.');renderInv();}
+
+// ---------- сцени ----------
+const scenes=[
+ {name:'Сцена 1 · Офис страховой', draw:drawOffice, hot:[
+   {x:120,y:300,w:130,h:90,id:'kp',t:'Папка «КП»',act:p=>{ if(p!==0)return 'Только Сисадмин с маркером понимает, что тут вычёркивать.';
+     if(flags.kp)return 'Уже вычеркнуто: 128к → 24к. Экономия 104к!'; flags.kp=1;score+=100;say('✏️ 128 000 $ зачёркнуто маркером → осталось 24 000 $. Смешно же.');return null;}},
+   {x:420,y:220,w:120,h:160,id:'dima',t:'Босс Дима',act:p=>{ if(p!==1)return 'Дима слушает только приказы... от себя? Ок, но премию выбивает он сам.';
+     if(flags.dima)return '100$ уже лежит в кармане. Лол.'; flags.dima=1;score+=50;addInv('💵 100$');addSecret(2);say('💼 «Чё делаешь? — Да вот вас тут ебут... Смотрите на сколько сразу. Премию не изволите?» → +100 $');return null;}},
+   {x:700,y:280,w:130,h:100,id:'manager',t:'Менеджер с косынкой',act:p=>{ if(flags.kos)return 'Косынка убрана. АРБАЙТЕН!';
+     if(p===1){flags.kos=1;score+=50;addSecret(0);say('💼 Босс: «Останови эту косынку». Полчаса — рас, рас, готово. Не нужна ему косынка, лол.');return null;}
+     if(p===2){flags.kos=1;score+=50;addSecret(0);say('🍻 Чех поднял тост — менеджер ушёл на дискотеку вместо косынки. Задача выполнена.');return null;}
+     return 'Менеджер увлёкся косынкой. Нужен приказ (Дима) или тост (Чех).';}},
+   {x:860,y:180,w:90,h:250,id:'door1',t:'→ Серверная',act:p=>{ if(flags.kp){scene=1;say('В серверную! Стойка уже ждёт.');} else say('Без утверждённого КП (вычеркни 128к маркером) в серверную нельзя.');return null;}},
+ ]},
+ {name:'Сцена 2 · Серверная банка', draw:drawServer, hot:[
+   {x:100,y:150,w:180,h:280,id:'rack',t:'Стойка W420',act:p=>{ if(p!==0)return 'Стойку оживляет только терминал Сисадмина.';
+     if(flags.rack)return 'Стойка уже гудит. К утру — полностью рабочая.'; flags.rack=1;score+=100;say('🔧 Стойка ожила: NT4 + Exchange + Informix + Citrix. К утру всё работало.');return null;}},
+   {x:380,y:120,w:150,h:200,id:'ups',t:'Матричный UPS',act:p=>{ if(!flags.rack)return 'Сначала оживи стойку.';
+     if(flags.ups)return 'UPS протестирован: 2 часа, алерты, graceful shutdown.';
+     if(p!==3)return 'Тест UPS — демонстрация дропа чужих пакетов. Нужна Мадре (клавиша 4).';
+     flags.ups=1;score+=100;startPackets();say('🛡 Мадре включила дроп: прилетели «хакерские пакеты» — кликай по ним, чужие пакеты дропаем!');return null;}},
+   {x:620,y:300,w:140,h:60,id:'cable',t:'Кабель интернета',act:p=>{ if(p!==0)return 'Кабель втыкает Сисадмин.';
+     if(flags.cable)return 'Интернет уже воткнут.'; flags.cable=1;score+=50;say('🔌 Кабель уже лежал — воткнул. Интернет есть.');return null;}},
+   {x:860,y:180,w:90,h:250,id:'door2',t:'→ Выходные',act:p=>{ if(flags.rack&&flags.cable){scene=2;say('Выходные. Время клонировать станцию на 120 машин.');} else say('Без стойки и интернета клонировать нечего.');return null;}},
+ ]},
+ {name:'Сцена 3 · Клонирование за выходные', draw:drawClone, hot:[
+   {x:150,y:200,w:200,h:140,id:'master',t:'Мастер-образ',act:p=>{ if(p!==0)return 'Образ клонирует Сисадмин.';
+     if(flags.clone)return '120 станций уже развёрнуты. В розетку — имя поменял — всё.';
+     flags.clone=1;score+=150;addSecret(1);say('💾 Образ склонирован на 120 станций за субботу-воскресенье. В розетку включил, имя в сети поменял — и готово.');return null;}},
+   {x:450,y:250,w:180,h:90,id:'mail',t:'Письмо чехам',act:p=>{ if(!flags.clone)return 'Сначала клонируй станции.';
+     if(flags.mail)return 'Письмо уже улетело. Они месяц тянули, потом приехали.';
+     flags.mail=1;score+=50;say('✉️ Письмо чехам отправлено со всей инфой. Курю бамбук. Они месяц ебали вола, потом приехали — а делать нечего.');return null;}},
+   {x:700,y:280,w:150,h:120,id:'train',t:'🚂 Поезд в Питер',act:p=>{ if(flags.clone&&flags.mail){scene=3;say('Поезд Москва→Питер. За 4 часа до отправления...');} else say('Сначала закончи клонирование и отправь письмо чехам.');return null;}},
+ ]},
+ {name:'Сцена 4 · UPS умер, eseutil', draw:drawTrain, hot:[
+   {x:150,y:220,w:200,h:150,id:'upsdead',t:'UPS обесточен',act:p=>{ if(p!==0)return 'Оживить UPS может только терминал Сисадмина.';
+     if(flags.ups2)return 'Стойка поднята. Informix уснули по расписанию — в безопасности.';
+     flags.ups2=1;score+=100;say('🔧 Стойка поднята. Informix уснули по расписанию, данные целы. Шлюз IBM ожил за полчаса с зеркала.');return null;}},
+   {x:450,y:240,w:200,h:110,id:'eseutil',t:'Файлы Exchange (eseutil)',act:p=>{ if(!flags.ups2)return 'Сначала подними стойку.';
+     if(flags.ending)return '...'; flags.ending=1;score+=200;endGame();return null;}},
+ ]},
+];
+
+// ---------- отрисовка в стиле ТО «420» ----------
+// примитивы с «линией без характера»: дрожащий контур, округлые формы, лаконичный фон
+function rnd(s){const x=Math.sin(s*127.1+311.7)*43758.5453;return x-Math.floor(x);}
+function wob(x,y,amt,seed){return [x+(rnd(seed)-.5)*amt, y+(rnd(seed+50)-.5)*amt];}
+function wobRect(x,y,w,h,col,seed,fill){
+ ctx.lineWidth=3;ctx.strokeStyle=col;
+ if(fill){ctx.fillStyle=fill;}
+ ctx.beginPath();
+ const c=[[x,y],[x+w,y],[x+w,y+h],[x,y+h]];
+ for(let i=0;i<4;i++){const a=c[i],b=c[(i+1)%4];
+  const n=Math.max(2,Math.round(Math.hypot(b[0]-a[0],b[1]-a[1])/30));
+  for(let j=0;j<=n;j++){const t=j/n;const p=wob(a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, 5, seed+i*31+j*7);
+   if(i===0&&j===0)ctx.moveTo(p[0],p[1]);else ctx.lineTo(p[0],p[1]);}}
+ ctx.closePath(); if(fill)ctx.fill(); ctx.stroke();}
+function wobCirc(x,y,r,col,seed,fill){
+ ctx.lineWidth=3;ctx.strokeStyle=col;if(fill)ctx.fillStyle=fill;ctx.beginPath();
+ const n=14;
+ for(let j=0;j<=n;j++){const a=j/n*Math.PI*2;const p=wob(x+Math.cos(a)*r, y+Math.sin(a)*r, 4, seed+j*17);
+  if(j===0)ctx.moveTo(p[0],p[1]);else ctx.lineTo(p[0],p[1]);}
+ ctx.closePath(); if(fill)ctx.fill(); ctx.stroke();}
+function wobLine(x1,y1,x2,y2,col,seed){
+ ctx.lineWidth=2.5;ctx.strokeStyle=col;ctx.beginPath();
+ const n=Math.max(2,Math.round(Math.hypot(x2-x1,y2-y1)/40));
+ for(let j=0;j<=n;j++){const t=j/n;const p=wob(x1+(x2-x1)*t, y1+(y2-y1)*t, 4, seed+j*11);
+  if(j===0)ctx.moveTo(p[0],p[1]);else ctx.lineTo(p[0],p[1]);}
+ ctx.stroke();}
+// crude-перс: голова-круг, туловище, ноги, предмет в руке — как в мультах ТО «420»
+function drawPerso(x,y,i,seed){
+ const col=PERS[i].color;
+ wobLine(x,y+52,x-8,y+78,col,seed); wobLine(x,y+52,x+8,y+78,col,seed);      // ноги
+ wobRect(x-12,y+18,24,36,col,seed+3,'rgba(0,0,0,0)');                      // туловище
+ wobCirc(x,y,13,col,seed+5,'#0a0f0a');                                      // голова
+ ctx.fillStyle=col;ctx.beginPath();ctx.arc(x-4,y-2,2,0,7);ctx.arc(x+4,y-2,2,0,7);ctx.fill(); // глаза
+ const item=['⌨','#💼','🍻','🛡'][i];
+ ctx.font='20px serif';ctx.fillText(item,x+12,y+30);}
+function bg(){
+ ctx.fillStyle='#0a0f0a';ctx.fillRect(0,0,960,540);
+ ctx.strokeStyle='rgba(57,255,106,.10)';ctx.lineWidth=1;
+ wobLine(0,440,960,440,'rgba(57,255,106,.25)',1);                           // лаконичный пол
+ for(let i=0;i<9;i++){wobLine(i*120,440,i*120+40,540,'rgba(57,255,106,.08)',i+9);}}
+function label(){
+ ctx.fillStyle='#39ff6a';ctx.font='bold 22px Courier New';ctx.fillText(scenes[scene].name,20,30);
+ ctx.font='16px Courier New';ctx.fillStyle=PERS[perso].color;
+ ctx.fillText('Перс: '+PERS[perso].name+' — '+PERS[perso].ab,20,516);
+ drawPerso(910,440,perso,99);}
+function hbox(h,txt,col){
+ wobRect(h.x,h.y,h.w,h.h,col||'#39ff6a',h.x,col&&col[1]?'rgba(0,0,0,0)':null);
+ ctx.fillStyle=col||'#39ff6a';ctx.font='15px Courier New';ctx.fillText(txt,h.x+4,h.y-8);}
+function drawOffice(){bg();label();
+ for(let i=0;i<6;i++){wobRect(70+i*145,380,90,55,'#1f5c2e',i*3,'#0d1a10');wobRect(85+i*145,360,60,24,'#2e7d46',i*5,'#0d1a10');}
+ hbox(scenes[0].hot[0],'📁 Папка «КП»: 128к','#ffd23f');
+ wobRect(120,300,130,90,'#ffd23f',11,'#1a1408');wobLine(140,330,230,340,'#ff8855',12);wobLine(140,350,215,362,'#ff8855',13); // бумаги с вычеркиванием
+ hbox(scenes[0].hot[1],'😎 Босс Дима','#ffd23f');drawPerso(480,300,1,21);
+ hbox(scenes[0].hot[2],'🃏 Менеджер + косынка','#ff5555');drawPerso(765,340,0,31);
+ wobRect(700,280,130,100,'#ff5555',33,'#160d0d');
+ ctx.fillStyle='#ff5555';ctx.font='26px serif';ctx.fillText('🂡',735,350);
+ hbox(scenes[0].hot[3],'🚪 → Серверная','#4fc3ff');wobRect(860,180,90,250,'#4fc3ff',41,'#081018');wobCirc(905,300,6,'#4fc3ff',42);}
+function drawServer(){bg();label();
+ hbox(scenes[1].hot[0],'🖥 Стойка W420',flags.rack?'#39ff6a':'#ff5555');
+ wobRect(100,150,180,280,flags.rack?'#39ff6a':'#ff5555',51,'#0d1a10');
+ const t=Date.now()/400;
+ for(let i=0;i<8;i++){const on=flags.rack? (Math.floor(t+i)%2===0) : (i===0);
+  wobCirc(120,180+i*30,5, on?'#39ff6a':'#123', 60+i, on?'#0f2':'#0a0f0a');}
+ hbox(scenes[1].hot[1],'🔋 UPS',flags.ups?'#39ff6a':'#ffd23f');
+ wobRect(380,120,150,200,flags.ups?'#39ff6a':'#ffd23f',71,'#141005');wobCirc(455,200,25,flags.ups?'#39ff6a':'#ffd23f',72);
+ hbox(scenes[1].hot[2],'🔌 Кабель',flags.cable?'#39ff6a':'#888');
+ wobLine(620,330,760,360,flags.cable?'#39ff6a':'#666',81);wobLine(760,360,860,300,flags.cable?'#39ff6a':'#666',82);
+ hbox(scenes[1].hot[3],'🚪 → Выходные','#4fc3ff');wobRect(860,180,90,250,'#4fc3ff',91,'#081018');
+ if(flags.ups&&!flags.packetsDone){
+  for(const p of packets){wobRect(p.x,p.y,16,16,'#ff3355',p.x*3+p.y,'#330a12');ctx.fillStyle='#ff3355';ctx.font='12px serif';ctx.fillText('☠',p.x+1,p.y+13);}
+  ctx.fillStyle='#b6ffc9';ctx.font='15px Courier New';ctx.fillText('Чужие пакеты летят! Мадре: кликай по ним!',280,45);}}
+function drawClone(){bg();label();
+ hbox(scenes[2].hot[0],'💾 Мастер-образ',flags.clone?'#39ff6a':'#ffd23f');
+ wobRect(150,200,200,140,flags.clone?'#39ff6a':'#ffd23f',101,'#0a140d');wobCirc(250,270,40,flags.clone?'#39ff6a':'#ffd23f',102);wobRect(235,255,30,30,'#39ff6a',103);
+ hbox(scenes[2].hot[1],'✉️ Письмо чехам',flags.mail?'#39ff6a':'#888');
+ wobRect(450,250,180,90,flags.mail?'#39ff6a':'#888',111,'#0d1410');wobLine(460,270,620,300,'#8f8',112);wobLine(460,300,600,270,'#8f8',113);
+ hbox(scenes[2].hot[2],'🚂 → Питер','#4fc3ff');wobRect(700,280,150,120,'#4fc3ff',121,'#081018');
+ ctx.fillStyle='#4fc3ff';ctx.font='40px serif';ctx.fillText('🚂',735,360);
+ const n=flags.clone?120:0;
+ for(let i=0;i<120;i++){const on=i<n;const x=40+(i%20)*45,y=400+Math.floor(i/20)*32;
+  wobRect(x,y,34,24,on?'#39ff6a':'#14301c',200+i,'#0a140a');}
+ ctx.fillStyle='#b6ffc9';ctx.font='15px Courier New';ctx.fillText('Клонировано: '+n+'/120 станций (в розетку — имя поменял — всё)',250,40);}
+function drawTrain(){bg();label();
+ ctx.fillStyle='#0e1a2e';ctx.fillRect(0,0,960,330);
+ for(let i=0;i<40;i++){const sx=(i*97+Date.now()/20)%960, sy=(i*53)%300;
+  wobCirc(sx,sy,1.6,'#cfe6ff',300+i,'#cfe6ff');}
+ wobLine(0,330,960,330,'#23406b',310);
+ hbox(scenes[3].hot[0],'🔋 UPS обесточен',flags.ups2?'#39ff6a':'#ff5555');
+ wobRect(150,220,200,150,flags.ups2?'#39ff6a':'#ff5555',321,'#140a0a');wobCirc(250,295,30,flags.ups2?'#39ff6a':'#ff5555',322);
+ ctx.fillStyle='#ff5555';ctx.font='18px Courier New';ctx.fillText('💤 zzz',270,290);
+ hbox(scenes[3].hot[1],'💾 База Exchange / eseutil','#ff6ad5');
+ wobRect(450,240,200,110,'#ff6ad5',331,'#160a14');wobCirc(550,295,32,'#ff6ad5',332);wobLine(520,295,580,295,'#ffb0ea',333);
+ ctx.fillStyle='#b6ffc9';ctx.font='15px Courier New';ctx.fillText('Питер, любовь, отпуск... а UPS спит как будто его не будили.',230,480);}
+
+// ---------- пакеты (мини-игра Мадре) ----------
+function startPackets(){packets=[];for(let i=0;i<10;i++)packets.push({x:Math.random()*900,y:-20-i*50,vy:1.5+Math.random()*2});}
+function tickPackets(){if(scene!==1||!flags.ups)return;
+ for(const p of packets){p.y+=p.vy;}
+ packets=packets.filter(p=>p.y<560);
+ if(flags.ups&&packets.length===0&&!flags.packetsDone){flags.packetsDone=1;score+=100;say('🛡 Все чужие пакеты дропнуты на релаксе. Доверяем только своим пакетам — для чужих нет хостов.');}
+ requestAnimationFrame(tickPackets);}
+
+// ---------- ввод ----------
+cv.addEventListener('click',e=>{const r=cv.getBoundingClientRect();
+ const x=(e.clientX-r.left)*(960/r.width), y=(e.clientY-r.top)*(540/r.height);
+ // пакеты ловим в первую очередь
+ if(scene===1&&flags.ups&&!flags.packetsDone&&perso===3){const i=packets.findIndex(p=>x>p.x-6&&x<p.x+22&&y>p.y-6&&y<p.y+22);
+  if(i>=0){packets.splice(i,1);score+=10;say('💥 Пакет дропнут!');renderInv();return;}}
+ const h=scenes[scene].hot.find(h=>x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h);
+ if(h){const m=h.act(perso);if(m)say(m);renderInv();}});
+document.querySelectorAll('.perso').forEach(el=>el.onclick=()=>{perso=+el.dataset.p;
+ document.querySelectorAll('.perso').forEach(x=>x.classList.remove('active'));el.classList.add('active');
+ say('Выбран: '+PERS[perso].name+' — '+PERS[perso].ab);});
+document.addEventListener('keydown',e=>{if(e.key>='1'&&e.key<='4'){perso=+e.key-1;document.querySelectorAll('.perso').forEach((x,i)=>x.classList.toggle('active',i===perso));say('Выбран: '+PERS[perso].name);}
+ if(e.key==='m'||e.key==='M'){muted=!muted;say(muted?'🔇 Музыка выключена':'🔊 Чиптюн пошёл');}});
+
+// ---------- чиптюн ----------
+let AC=null, musicTimer=null;
+const MELODY=[523,659,784,659, 523,659,784,1046, 880,784,659,587, 523,392,523,0];
+function startMusic(){if(AC||muted)return;const ACc=window.AudioContext||window.webkitAudioContext;if(!ACc){say('🔇 В этом браузере нет WebAudio — играем без звука');return;}AC=new ACc();
+ let step=0;
+ musicTimer=setInterval(()=>{if(muted)return;
+  const f=MELODY[step%MELODY.length];step++;
+  const o=AC.createOscillator(),g=AC.createGain();o.type='square';o.frequency.value=f||1;
+  g.gain.setValueAtTime(0.06,AC.currentTime);g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+0.22);
+  o.connect(g).connect(AC.destination);o.start();o.stop(AC.currentTime+0.24);
+  if(step%4===0){const b=AC.createOscillator(),bg=AC.createGain();b.type='triangle';b.frequency.value=131;
+   bg.gain.setValueAtTime(0.08,AC.currentTime);bg.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+0.4);
+   b.connect(bg).connect(AC.destination);b.start();b.stop(AC.currentTime+0.42);}
+ },240);}
+
+// ---------- финал ----------
+function endGame(){document.getElementById('endscore').textContent=score;
+ document.getElementById('endsec').textContent=secrets+'/3';
+ document.getElementById('endtext').textContent='Шеф полез в файлы без бэкапа, сказал «eseutil» — и всё случайно убил. Ты приехал из Питера — а тебя уже уволили. Но Мадре всё записала в hash-chain: стрелки не перевести. Офис на 420 снова поднят за 4 дня.';
+ document.getElementById('end').style.display='flex';}
+document.getElementById('end').onclick=()=>location.reload();
+document.getElementById('start').onclick=()=>{document.getElementById('start').style.display='none';startMusic();running=true;say('Квест начался. Выбери перса (1-4) и кликай по предметам!');};
+function loop(){const d=scenes[scene].draw;d();requestAnimationFrame(loop);}
+requestAnimationFrame(loop);requestAnimationFrame(tickPackets);renderInv();
+</script>
+</body>
+</html>
