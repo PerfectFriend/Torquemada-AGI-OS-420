@@ -186,6 +186,25 @@ section.view::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;
     </div>
     <div id="fw-out" class="mono" style="margin-top:6px;opacity:.85;white-space:pre-wrap"></div>
   </div>
+  <div class="card live" style="margin-top:8px"><div class="k">АРСЕНАЛ МАТЕРИ ТОРКВЕМАДЫ · default-deny (чужие пакеты дропаем) <span class="b live">LIVE</span></div>
+    <div class="row">
+      <button class="a" id="madre-refresh">ОБНОВИТЬ</button>
+      <button class="a" id="madre-mode">РЕЖИМ observe/enforce</button>
+      <button class="a" id="madre-apply">ПРИМЕНИТЬ DEFAULT-DENY</button>
+      <button class="a" id="madre-clear">СНЯТЬ ПРАВИЛА</button>
+      <button class="a" id="madre-hp">HONEYPOT on/off</button>
+      <button class="a" id="madre-wd">WATCHDOG on/off</button>
+      <button class="a" id="madre-helm">ШТУРВАЛ AGI</button>
+      <span class="mono" id="madre-stat">—</span>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <input id="madre-allow-in" placeholder="свой хост/сеть в allowlist, напр. 10.20.0.0/16" style="max-width:240px">
+      <button class="a" id="madre-allow-add">ДОБАВИТЬ СВОЕГО</button>
+      <input id="madre-dst-in" placeholder="IP для вердикта Матери" style="max-width:160px">
+      <button class="a" id="madre-verdict">ВЕРДИКТ (accept/drop)</button>
+    </div>
+    <div id="madre-out" class="mono" style="margin-top:6px;opacity:.85;white-space:pre-wrap"></div>
+  </div>
   <div class="card live" style="margin-top:8px"><div class="k">SIEM · СОБЫТИЯ · ИНЦИДЕНТЫ <span class="b live">LIVE</span></div>
     <div class="row">
       <button class="a" id="siem-ingest">INGEST</button>
@@ -698,6 +717,7 @@ if(window.__TAURI__&&window.__TAURI__.core){
 <script src="evtlog.js"></script>
 <script src="taskext.js"></script>
 <script src="fmgr.js"></script>
+<script src="madre.js"></script>
 <script src="hud.js"></script>
 </body>
 </html>

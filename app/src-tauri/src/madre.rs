@@ -400,16 +400,21 @@ impl MadreManager {
 // ============================================================================
 
 /// Сводка арсенала: конфиг + последние события + статус honeypot/watchdog.
-#[tauri::command]
-pub fn madre_status(mgr: tauri::State<'_, MadreManager>) -> Result<Value, String> {
+/// Сводка арсенала — чистая функция от менеджера (для команды и для AGI-whelist).
+pub fn status_value(mgr: &MadreManager) -> Value {
     let cfg = mgr.cfg.lock().unwrap().clone();
-    Ok(json!({
+    json!({
         "config": cfg,
         "honeypot_running": mgr.honeypot.lock().unwrap().is_some(),
         "watchdog_running": mgr.watchdog.lock().unwrap().is_some(),
         "honeypot_ports": HONEYPOT_PORTS,
         "events": mgr.events(20),
-    }))
+    })
+}
+
+#[tauri::command]
+pub fn madre_status(mgr: tauri::State<'_, MadreManager>) -> Result<Value, String> {
+    Ok(status_value(&mgr))
 }
 
 /// Режим: observe | enforce.
@@ -513,11 +518,11 @@ pub fn madre_events(mgr: tauri::State<'_, MadreManager>, limit: Option<u32>) -> 
 
 /// Штурвал AGI: сводка для модели + системный промпт Матери.
 /// AGI-оболочка (agi.rs) сидит за штурвалом и видит только этот статус — ключи ей не нужны.
-#[tauri::command]
-pub fn madre_helm(mgr: tauri::State<'_, MadreManager>) -> Result<Value, String> {
+/// Штурвал для AGI — сводка + промпт Матери (read-only).
+pub fn helm_value(mgr: &MadreManager) -> Value {
     let cfg = mgr.cfg.lock().unwrap().clone();
     let events = mgr.events(10);
-    Ok(json!({
+    json!({
         "system_prompt": MADRE_SYSTEM_PROMPT,
         "mode": cfg.mode,
         "honeypot_on": cfg.honeypot_on,
@@ -525,7 +530,12 @@ pub fn madre_helm(mgr: tauri::State<'_, MadreManager>) -> Result<Value, String> 
         "allow": parse_allowlist(&cfg.allow),
         "philosophy": "доверяем только своим пакетам; чужие все дропаем — для них нет хостов",
         "recent_events": events,
-    }))
+    })
+}
+
+#[tauri::command]
+pub fn madre_helm(mgr: tauri::State<'_, MadreManager>) -> Result<Value, String> {
+    Ok(helm_value(&mgr))
 }
 
 // ============================================================================

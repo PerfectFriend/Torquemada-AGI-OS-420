@@ -30,6 +30,8 @@ pub fn tools_list() -> Vec<Value> {
         json!({"name": "siem_dashboard", "description": "Сводка SIEM: события, инциденты, топ источников"}),
         json!({"name": "soc_status", "description": "Статус AI SOC: playbooks, последние циклы, инциденты"}),
         json!({"name": "threats_last_scan", "description": "Результат последнего сканирования угроз (CVE)"}),
+        json!({"name": "madre_helm", "description": "Штурвал Матери Торквемады: промпт арсенала, режим, allowlist, свежие события (read-only)"}),
+        json!({"name": "madre_status", "description": "Статус арсенала Матери: honeypot/watchdog, конфиг, события (read-only)"}),
     ]
 }
 
@@ -47,6 +49,7 @@ pub async fn tool_exec(
     siem: &crate::siem::SiemManager,
     soc: &crate::ai_soc::SocManager,
     threats: &crate::threats::ThreatMonitor,
+    madre: &crate::madre::MadreManager,
 ) -> Result<Value, String> {
     if !whitelisted_tool(name) {
         return Err(format!("инструмент не в whitelist: {name}"));
@@ -70,6 +73,8 @@ pub async fn tool_exec(
         "siem_dashboard" => siem.dashboard(),
         "soc_status" => soc.status(),
         "threats_last_scan" => Ok(json!(threats.last_scan_result())),
+        "madre_helm" => Ok(crate::madre::helm_value(madre)),
+        "madre_status" => Ok(crate::madre::status_value(madre)),
         _ => Err("неизвестный инструмент".to_string()),
     }
 }
@@ -160,6 +165,7 @@ impl Agi {
         siem: &crate::siem::SiemManager,
         soc: &crate::ai_soc::SocManager,
         threats: &crate::threats::ThreatMonitor,
+        madre: &crate::madre::MadreManager,
     ) -> Result<Proposal, String> {
         // 1) Меняем статус под lock, параметры забираем — guard ДО .await дропаем (MutexGuard !Send).
         let (kind, params) = {
@@ -176,7 +182,7 @@ impl Agi {
         let exec = if approve && kind == "run_tool" {
             let tool = params["tool"].as_str().unwrap_or("");
             let args = params.get("args").cloned().unwrap_or(json!({}));
-            Some(tool_exec(tool, &args, siem, soc, threats).await)
+            Some(tool_exec(tool, &args, siem, soc, threats, madre).await)
         } else {
             None
         };
@@ -258,8 +264,9 @@ pub async fn agi_tool_exec(
     siem: tauri::State<'_, crate::siem::SiemManager>,
     soc: tauri::State<'_, crate::ai_soc::SocManager>,
     threats: tauri::State<'_, crate::threats::ThreatMonitor>,
+    madre: tauri::State<'_, crate::madre::MadreManager>,
 ) -> Result<Value, String> {
-    tool_exec(&name, &args.unwrap_or(json!({})), &siem, &soc, &threats).await
+    tool_exec(&name, &args.unwrap_or(json!({})), &siem, &soc, &threats, &madre).await
 }
 
 /// Старт автономной задачи: выставляет состояние и спавнит цикл опросов модели.
@@ -366,8 +373,9 @@ pub async fn task_approve(
     siem: tauri::State<'_, crate::siem::SiemManager>,
     soc: tauri::State<'_, crate::ai_soc::SocManager>,
     threats: tauri::State<'_, crate::threats::ThreatMonitor>,
+    madre: tauri::State<'_, crate::madre::MadreManager>,
 ) -> Result<Proposal, String> {
-    agi_arc().decide(id, approve, &siem, &soc, &threats).await
+    agi_arc().decide(id, approve, &siem, &soc, &threats, &madre).await
 }
 
 static AGI_ARC: std::sync::OnceLock<std::sync::Arc<Agi>> = std::sync::OnceLock::new();
@@ -413,9 +421,12 @@ mod tests {
     fn test_whitelist() {
         assert!(whitelisted_tool("system_status"));
         assert!(whitelisted_tool("siem_dashboard"));
+        assert!(whitelisted_tool("madre_helm"));
+        assert!(whitelisted_tool("madre_status"));
         assert!(!whitelisted_tool("fw_isolate_host")); // мутации — только вручную
+        assert!(!whitelisted_tool("madre_apply")); // применение правил — только руками
         assert!(!whitelisted_tool("rm"));
-        assert_eq!(tools_list().len(), 4);
+        assert_eq!(tools_list().len(), 6);
     }
 
     #[test]
