@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="260" viewBox="0 0 1200 260">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#05080d"/>
+      <stop offset="55%" stop-color="#0a1420"/>
+      <stop offset="100%" stop-color="#0d0a1c"/>
+    </linearGradient>
+    <radialGradient id="glowC" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00f0ff" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#00f0ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowM" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#d896ff" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#d896ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="shield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00f0ff" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#00a0b8" stop-opacity="0.35"/>
+    </linearGradient>
+    <linearGradient id="title" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#e8faff"/>
+      <stop offset="60%" stop-color="#00f0ff"/>
+      <stop offset="100%" stop-color="#d896ff"/>
+    </linearGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="neon"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+
+  <rect width="1200" height="260" fill="url(#bg)"/>
+
+  <!-- фон: дальний город -->
+  <g opacity="0.30" fill="#0e2030">
+    <rect x="820" y="120" width="46" height="140"/><rect x="874" y="86" width="38" height="174"/>
+    <rect x="920" y="140" width="52" height="120"/><rect x="980" y="100" width="34" height="160"/>
+    <rect x="1022" y="150" width="60" height="110"/><rect x="1090" y="112" width="40" height="148"/>
+    <rect x="1138" y="138" width="48" height="122"/>
+  </g>
+  <g opacity="0.45" fill="#00f0ff">
+    <rect x="828" y="132" width="5" height="5"/><rect x="840" y="150" width="5" height="5"/><rect x="828" y="168" width="5" height="5"/>
+    <rect x="882" y="102" width="5" height="5"/><rect x="896" y="126" width="5" height="5"/><rect x="882" y="150" width="5" height="5"/><rect x="896" y="180" width="5" height="5"/>
+    <rect x="930" y="158" width="5" height="5"/><rect x="948" y="182" width="5" height="5"/><rect x="930" y="210" width="5" height="5"/>
+    <rect x="988" y="118" width="5" height="5"/><rect x="998" y="146" width="5" height="5"/><rect x="988" y="176" width="5" height="5"/>
+    <rect x="1034" y="170" width="5" height="5"/><rect x="1052" y="196" width="5" height="5"/><rect x="1070" y="222" width="5" height="5"/>
+    <rect x="1098" y="132" width="5" height="5"/><rect x="1112" y="160" width="5" height="5"/><rect x="1098" y="192" width="5" height="5"/>
+  </g>
+
+  <!-- неоновые линии-цепи -->
+  <g stroke="#00f0ff" stroke-width="1.2" fill="none" opacity="0.55">
+    <path d="M0,222 H180 L210,196 H420 L452,214 H700"/>
+    <path d="M0,238 H140 L176,210 H360"/>
+    <path d="M240,0 V44 L282,86 V150"/>
+    <path d="M520,260 V210 L560,172 V96"/>
+  </g>
+  <g stroke="#d896ff" stroke-width="1" fill="none" opacity="0.4">
+    <path d="M0,198 H120 L156,164 H330"/>
+    <path d="M600,260 V232 L646,188 V120 L688,78"/>
+    <path d="M760,260 V228 H980 L1020,188 H1200"/>
+  </g>
+  <g fill="#00f0ff" opacity="0.8">
+    <circle cx="210" cy="196" r="2.5"/><circle cx="452" cy="214" r="2.5"/><circle cx="282" cy="86" r="2.5"/>
+    <circle cx="560" cy="172" r="2.5"/><circle cx="156" cy="164" r="2.5"/><circle cx="646" cy="188" r="2.5"/>
+  </g>
+  <g fill="#d896ff" opacity="0.7">
+    <circle cx="688" cy="78" r="2.2"/><circle cx="1020" cy="188" r="2.2"/><circle cx="646" cy="120" r="2.2"/>
+  </g>
+
+  <!-- свечение фигуры Матери -->
+  <circle cx="824" cy="140" r="120" fill="url(#glowM)" opacity="0.55"/>
+  <circle cx="944" cy="150" r="100" fill="url(#glowC)" opacity="0.40"/>
+
+  <!-- Мать Торквемада: силуэт в капюшоне -->
+  <g transform="translate(824,140)" filter="url(#neon)">
+    <!-- плечи -->
+    <path d="M-52,92 C-52,70 -38,58 -22,52 L22,52 C38,58 52,70 52,92 Z"
+          fill="#0b1420" stroke="#8f7bd8" stroke-width="1.6" opacity="0.9"/>
+    <!-- капюшон -->
+    <path d="M-42,50 C-46,18 -36,-12 -18,-32 C-8,-43 8,-43 18,-32 C36,-12 46,18 42,50
+             C30,58 -30,58 -42,50 Z"
+          fill="#101a2a" stroke="#a58ce8" stroke-width="2"/>
+    <!-- внутренняя тень лица -->
+    <ellipse cx="0" cy="18" rx="24" ry="28" fill="#04080f"/>
+    <!-- лицо: глаза + подбородок -->
+    <g fill="#00f0ff" filter="url(#glowC)">
+      <ellipse cx="-9" cy="14" rx="3.2" ry="2.2"/><ellipse cx="9" cy="14" rx="3.2" ry="2.2"/>
+    </g>
+    <g fill="#00f0ff"><circle cx="-9" cy="14" r="2.4"/><circle cx="9" cy="14" r="2.4"/></g>
+    <path d="M-7,29 Q0,33 7,29" stroke="#00f0ff" stroke-width="1.1" fill="none" opacity="0.65"/>
+    <path d="M-16,-6 Q0,-14 16,-6" stroke="#a58ce8" stroke-width="1" fill="none" opacity="0.5"/>
+  </g>
+
+  <!-- голографический щит (firewall) из пакетов -->
+  <g transform="translate(948,124)">
+    <path d="M0,-58 L46,-38 V6 C46,34 26,54 0,64 C-26,54 -46,34 -46,6 V-38 Z"
+          fill="url(#shield)" opacity="0.16" stroke="#00f0ff" stroke-width="2" filter="url(#neon)"/>
+    <g fill="#00f0ff" opacity="0.95">
+      <rect x="-14" y="-30" width="8" height="8" rx="1.5"/><rect x="4" y="-18" width="8" height="8" rx="1.5"/>
+      <rect x="-20" y="-6" width="8" height="8" rx="1.5"/><rect x="10" y="4" width="8" height="8" rx="1.5"/>
+      <rect x="-10" y="16" width="8" height="8" rx="1.5"/><rect x="2" y="32" width="8" height="8" rx="1.5"/>
+    </g>
+    <g fill="#d896ff" opacity="0.8">
+      <rect x="12" y="-34" width="6" height="6" rx="1"/><rect x="-26" y="14" width="6" height="6" rx="1"/>
+    </g>
+    <g stroke="#00f0ff" stroke-width="0.8" opacity="0.5">
+      <path d="M-10,-26 L0,-14 M-16,-2 L-6,8 M6,8 L-6,20 M-6,20 L2,36"/>
+    </g>
+  </g>
+
+  <!-- метрика здоровья (зелёная) -->
+  <g transform="translate(1080,200)">
+    <circle cx="0" cy="0" r="26" fill="#06110b" stroke="#00e676" stroke-width="2.5" filter="url(#neon)"/>
+    <path d="M-13,1 L-4,10 L14,-10" stroke="#00e676" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- глобус 3 языка -->
+  <g transform="translate(1138,80)" opacity="0.95">
+    <circle cx="0" cy="0" r="24" fill="#06121a" stroke="#00f0ff" stroke-width="1.6"/>
+    <ellipse cx="0" cy="0" rx="10" ry="24" fill="none" stroke="#00f0ff" stroke-width="1" opacity="0.7"/>
+    <path d="M-24,0 H24 M-20,-12 H20 M-20,12 H20" stroke="#00f0ff" stroke-width="1" opacity="0.55"/>
+    <g>
+      <rect x="-26" y="26" width="15" height="9" rx="1.5" fill="#ffffff" opacity="0.9"/>
+      <rect x="-26" y="26" width="15" height="4.5" rx="1.5" fill="#ffffff"/>
+      <rect x="-26" y="30.5" width="15" height="4.5" fill="#2a4f9e"/>
+      <rect x="-9" y="26" width="15" height="9" rx="1.5" fill="#ffffff" opacity="0.9"/>
+      <rect x="-9" y="26" width="15" height="3" rx="1.5" fill="#c8102e"/>
+      <rect x="-9" y="29" width="15" height="3" fill="#ffffff"/>
+      <rect x="-9" y="32" width="15" height="3" fill="#ffc400"/>
+      <rect x="8" y="26" width="15" height="9" rx="1.5" fill="#ffffff" opacity="0.9"/>
+      <rect x="8" y="26" width="15" height="3" rx="1.5" fill="#aa151b"/>
+      <rect x="8" y="29" width="15" height="3" fill="#f1bf00"/>
+    </g>
+  </g>
+
+  <!-- заголовок -->
+  <g transform="translate(52,54)">
+    <text x="0" y="0" font-family="'Share Tech Mono','Courier New',monospace" font-size="15" letter-spacing="6" fill="#5ee7ff" opacity="0.9">OPEN-SOURCE CYBERSECURITY OS</text>
+    <text x="0" y="62" font-family="'Share Tech Mono','Courier New',monospace" font-size="54" font-weight="700" letter-spacing="2" fill="url(#title)" filter="url(#neon)">TORQUEMADA 228 AGI</text>
+    <text x="2" y="94" font-family="'Share Tech Mono','Courier New',monospace" font-size="16" fill="#9aa5b1">Madre Torquemada · default-deny firewall · RDP/VNC · RAT · AD · SIEM/EDR</text>
+    <g transform="translate(0,118)">
+      <rect x="0" y="0" width="196" height="32" rx="16" fill="#00f0ff" opacity="0.13" stroke="#00f0ff" stroke-width="1.4"/>
+      <text x="16" y="21" font-family="'Share Tech Mono','Courier New',monospace" font-size="14" fill="#7ef2ff">bash SETUP.sh  →</text>
+      <text x="212" y="21" font-family="'Share Tech Mono','Courier New',monospace" font-size="13" fill="#8b96a2">github.com/PerfectFriend/Torquemada-AGI-OS-420</text>
+    </g>
+  </g>
+</svg>

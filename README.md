@@ -8,12 +8,15 @@
 [![RC1](https://img.shields.io/badge/status-RC1%20planning-blueviolet)](RC1-PLAN.md)
 
 ![Torquemada 228 AGI banner](banner-hero.png)
+<p align="center"><sub>Vector-версия: <a href="banner-hero.svg">banner-hero.svg</a> · промпты для Grok: <a href="BANNER-PROMPTS.md">BANNER-PROMPTS.md</a></sub></p>
 
 > **«Доверяем только своим пакетам — чужие все дропаем, для них нет хостов.»**
 
 Торквемада 228 AGI (ранее W420) — автономный OS-агент кибербезопасности на **Tauri v2 + Rust + тонкий JS-клиент** (38 этапов эволюции паритета DameWare Remote Support). За штурвалом — **Madre Torquemada** (материнский ИИ арсенала, default-deny firewall, honeypot, watchdog), а поверх — RDP/VNC-сессии, удалённый RAT, Active Directory (LDAP), сетевые утилиты, мониторинг здоровья хостов, SIEM/EDR-интеграция и голографический интерфейс с голосом.
 
 ## 🔥 Основные возможности
+
+![Возможности Torquemada 228 AGI](banner-features.png)
 
 | Модуль | Что делает |
 |---|---|
@@ -46,6 +49,8 @@ bash SETUP.sh [--from-release]
 - по согласию запускает `root_setup.sh` (nftables base + narrow NOPASSWD sudo).
 
 Подробно: [`SETUP.md`](SETUP.md).
+
+![Поток установки](install-flow.png)
 
 ## 🎮 Первый запуск
 
