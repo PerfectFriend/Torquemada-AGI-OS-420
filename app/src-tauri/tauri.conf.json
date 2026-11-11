@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Windows420",
+  "productName": "TorquemadaAGI",
   "version": "0.2.0",
-  "identifier": "dev.w420.agios",
+  "identifier": "dev.torquemada.agi",
   "build": {
     "frontendDist": "../dist"
   },
@@ -11,7 +11,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "WINDOWS 420 — AGI OS",
+        "title": "TorquemadaAGI — Cybersecurity AI OS",
         "width": 1280,
         "height": 800,
         "visible": false
