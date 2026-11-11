@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="300" viewBox="0 0 1000 300">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a0e14"/>
+      <stop offset="100%" stop-color="#111824"/>
+    </linearGradient>
+    <linearGradient id="step" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#162a3c"/>
+      <stop offset="100%" stop-color="#0d1621"/>
+    </linearGradient>
+  </defs>
+  <rect width="1000" height="300" fill="url(#bg2)"/>
+
+  <text x="24" y="34" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="700" fill="#e0e6ed">Установка Torquemada 228 AGI — поток одной команды</text>
+
+  <!-- step 1 -->
+  <g transform="translate(40,60)">
+    <circle cx="40" cy="40" r="40" fill="url(#step)" stroke="#00f0ff" stroke-width="3"/>
+    <text x="40" y="47" font-family="share-tech-mono" font-size="22" font-weight="700" fill="#00f0ff" text-anchor="middle">1</text>
+  </g>
+  <g transform="translate(100,44)">
+    <text x="0" y="0" font-family="system-ui" font-size="13" font-weight="700" fill="#e0e6ed">Клон и проверка</text>
+    <text x="0" y="20" font-family="share-tech-mono" font-size="10" fill="#9aa5b1">git clone repo</text>
+    <text x="0" y="34" font-family="share-tech-mono" font-size="10" fill="#9aa5b1">git fetch origin main</text>
+    <text x="0" y="48" font-family="share-tech-mono" font-size="10" fill="#9aa5b1">req: git curl jq sudo cargo node</text>
+  </g>
+
+  <!-- arrow 1-2 -->
+  <g transform="translate(355,80)">
+    <polygon points="0,0 24,12 0,24" fill="#00f0ff"/>
+  </g>
+
+  <!-- step 2 -->
+  <g transform="translate(390,60)">
+    <circle cx="40" cy="40" r="40" fill="url(#step)" stroke="#00f0ff" stroke-width="3"/>
+    <text x="40" y="47" font-family="share-tech-mono" font-size="22" font-weight="700" fill="#00f0ff" text-anchor="middle">2</text>
+  </g>
+  <g transform="translate(450,44)">
+    <text x="0" y="0" font-family="system-ui" font-size="13" font-weight="700" fill="#e0e6ed">Бинарник</text>
+    <text x="0" y="20" font-family="share-tech-mono" font-size="10" fill="#9aa5b1">cargo build --release (или</text>
+    <text x="0" y="34" font-family="share-tech-mono" font-size="10" fill="#9aa5b1">  └─ из GitHub Releases: deb)</text>
+    <text x="0" y="48" font-family="share-tech-mono" font-size="10" fill="#9aa5b1">~/.w420/opt/w420/w420</text>
+  </g>
+
+  <!-- arrow 2-3 -->
+  <g transform="translate(725,80)">
+    <polygon points="0,0 24,12 0,24" fill="#00f0ff"/>
+  </g>
+
+  <!-- step 3 -->
+  <g transform="translate(760,60)">
+    <circle cx="40" cy="40" r="40" fill="url(#step)" stroke="#00f0ff" stroke-width="3"/>
+    <text x="40" y="47" font-family="share-tech-mono" font-size="22" font-weight="700" fill="#00f0ff" text-anchor="middle">3</text>
+  </g>
+  <g transform="translate(820,44)">
+    <text x="0" y="0" font-family="system-ui" font-size="13" font-weight="700" fill="#e0e6ed">Ресурсы и автозапуск</text>
+    <text x="0" y="20" font-family="share-tech-mono" font-size="10" fill="#9aa5b1">sidecars · иконки</text>
+    <text x="0" y="34" font-family="share-tech-mono" font-size="10" fill="#9aa5b1">autostart: .desktop + systemd --user</text>
+    <text x="0" y="48" font-family="share-tech-mono" font-size="10" fill="#9aa5b1">root_setup.sh — по согласию</text>
+  </g>
+
+  <!-- result banner -->
+  <g transform="translate(40,170)">
+    <rect x="0" y="0" width="920" height="80" rx="12" fill="url(#step)" stroke="#00e676" stroke-width="2"/>
+    <rect x="18" y="16" width="14" height="14" fill="#00e676"/>
+    <text x="42" y="32" font-family="system-ui" font-size="14" font-weight="700" fill="#e0e6ed">Готово: первый запуск</text>
+    <text x="42" y="54" font-family="share-tech-mono" font-size="10.5" fill="#b8f0cc">~/.w420/opt/w420/w420  ·  «Торквемада 228 AGI» в меню ·  язык: ru (Настройки → en/es)</text>
+  </g>
+
+  <text x="24" y="278" font-family="share-tech-mono" font-size="9" fill="#5c6770">Однокомандная установка: bash SETUP.sh · без ISO · открытое ПО (MIT) · https://github.com/PerfectFriend/Torquemada-AGI-OS-420</text>
+</svg>

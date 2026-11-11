@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="460" viewBox="0 0 1000 460">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a0e14"/>
+      <stop offset="100%" stop-color="#111824"/>
+    </linearGradient>
+    <linearGradient id="card1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1f3a52"/>
+      <stop offset="100%" stop-color="#162a3c"/>
+    </linearGradient>
+    <linearGradient id="card2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2a3d2f"/>
+      <stop offset="100%" stop-color="#1a2a21"/>
+    </linearGradient>
+    <linearGradient id="card3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3d2a2a"/>
+      <stop offset="100%" stop-color="#2a1a1a"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1000" height="460" fill="url(#bg)"/>
+
+  <text x="24" y="34" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="700" fill="#e0e6ed">Torquemada 228 AGI — RC1 архитектура</text>
+  <text x="24" y="56" font-family="share-tech-mono,monospace" font-size="11" fill="#9aa5b1">GitHub (открытый) — SETUP.sh — автономная установка — i18n (RU/EN/ES)</text>
+
+  <!-- column 1: GitHub -->
+  <g transform="translate(24,90)">
+    <rect x="0" y="0" width="160" height="130" rx="10" fill="url(#card1)" stroke="#00f0ff" stroke-width="2" filter="url(#glow)"/>
+    <rect x="14" y="24" width="12" height="12" fill="#00f0ff"/>
+    <text x="34" y="34" font-family="system-ui" font-size="12" font-weight="700" fill="#e0e6ed">GitHub</text>
+    <text x="16" y="56" font-family="share-tech-mono" font-size="10" fill="#cfd8e0">repo</text>
+    <text x="16" y="70" font-family="share-tech-mono" font-size="10" fill="#9aa5b1">SETUP.sh</text>
+    <text x="16" y="84" font-family="share-tech-mono" font-size="10" fill="#9aa5b1">w420_*.deb</text>
+    <text x="16" y="98" font-family="share-tech-mono" font-size="10" fill="#9aa5b1">i18n/*.json</text>
+    <text x="16" y="112" font-family="share-tech-mono" font-size="10" fill="#9aa5b1">app/ · scripts/</text>
+  </g>
+
+  <!-- arrow 1 -->
+  <g transform="translate(184,136)">
+    <polygon points="0,0 20,10 0,20" fill="#00f0ff"/>
+    <line x1="20" y1="10" x2="64" y2="10" stroke="#00f0ff" stroke-width="2"/>
+  </g>
+
+  <!-- column 2: installer -->
+  <g transform="translate(206,90)">
+    <rect x="0" y="0" width="170" height="160" rx="10" fill="url(#card1)" stroke="#00f0ff" stroke-width="2" filter="url(#glow)"/>
+    <rect x="14" y="24" width="12" height="12" fill="#00f0ff"/>
+    <text x="34" y="34" font-family="system-ui" font-size="12" font-weight="700" fill="#e0e6ed">SETUP.sh</text>
+    <text x="16" y="58" font-family="share-tech-mono" font-size="9" fill="#cfd8e0">git clone</text>
+    <text x="16" y="72" font-family="share-tech-mono" font-size="9" fill="#cfd8e0">cargo build</text>
+    <text x="16" y="86" font-family="share-tech-mono" font-size="9" fill="#cfd8e0">sidecars: sing-</text>
+    <text x="16" y="98" font-family="share-tech-mono" font-size="9" fill="#9aa5b1">box, trivy, gitleaks</text>
+    <text x="16" y="112" font-family="share-tech-mono" font-size="9" fill="#cfd8e0">autostart: .desktop</text>
+    <text x="16" y="126" font-family="share-tech-mono" font-size="9" fill="#9aa5b1">+ systemd --user</text>
+    <text x="16" y="140" font-family="share-tech-mono" font-size="9" fill="#9aa5b1">root_setup.sh (по</text>
+    <text x="16" y="152" font-family="share-tech-mono" font-size="9" fill="#9aa5b1">согласию)</text>
+  </g>
+
+  <!-- arrow 2 -->
+  <g transform="translate(376,150)">
+    <polygon points="0,0 20,10 0,20" fill="#00f0ff"/>
+    <line x1="20" y1="10" x2="64" y2="10" stroke="#00f0ff" stroke-width="2"/>
+  </g>
+
+  <!-- column 3: app runtime -->
+  <g transform="translate(440,90)">
+    <rect x="0" y="0" width="320" height="220" rx="10" fill="url(#card2)" stroke="#00e676" stroke-width="2" filter="url(#glow)"/>
+    <rect x="14" y="24" width="12" height="12" fill="#00e676"/>
+    <text x="34" y="34" font-family="system-ui" font-size="12" font-weight="700" fill="#e0e6ed">~/.w420 — приложение</text>
+
+    <g transform="translate(14,56)">
+      <rect x="0" y="0" width="292" height="48" rx="6" fill="#1a2a21" stroke="#1f4d35" stroke-width="1"/>
+      <text x="12" y="20" font-family="share-tech-mono" font-size="10" fill="#b8f0cc">w420 (Rust, Tauri v2)</text>
+      <text x="12" y="36" font-family="share-tech-mono" font-size="8" fill="#8bbf9a">команды: fw, madre, health, rdesk,</text>
+      <text x="12" y="48" font-family="share-tech-mono" font-size="8" fill="#8bbf9a">rat, ad, siem, voice...</text>
+    </g>
+
+    <g transform="translate(14,114)">
+      <rect x="0" y="0" width="292" height="48" rx="6" fill="#1a2a21" stroke="#1f4d35" stroke-width="1"/>
+      <text x="12" y="20" font-family="share-tech-mono" font-size="10" fill="#b8f0cc">dist/ (тонкий JS-клиент)</text>
+      <text x="12" y="36" font-family="share-tech-mono" font-size="8" fill="#8bbf9a">i18n/*.json ru/en/es · data-i18n</text>
+      <text x="12" y="48" font-family="share-tech-mono" font-size="8" fill="#8bbf9a">переключение в «Настройки»</text>
+    </g>
+
+    <g transform="translate(14,172)">
+      <rect x="0" y="0" width="292" height="40" rx="6" fill="#1a2a21" stroke="#1f4d35" stroke-width="1"/>
+      <text x="12" y="20" font-family="share-tech-mono" font-size="10" fill="#b8f0cc">binaries/ (sidecars)</text>
+      <text x="12" y="34" font-family="share-tech-mono" font-size="8" fill="#8bbf9a">sing-box · trivy · gitleaks</text>
+    </g>
+  </g>
+
+  <!-- arrow 3 -->
+  <g transform="translate(760,200)">
+    <polygon points="0,0 20,10 0,20" fill="#00e676"/>
+    <line x1="20" y1="10" x2="64" y2="10" stroke="#00e676" stroke-width="2"/>
+  </g>
+
+  <!-- column 4: kernel -->
+  <g transform="translate(824,140)">
+    <rect x="0" y="0" width="152" height="130" rx="10" fill="url(#card3)" stroke="#ff4757" stroke-width="2" filter="url(#glow)"/>
+    <rect x="14" y="24" width="12" height="12" fill="#ff4757"/>
+    <text x="34" y="34" font-family="system-ui" font-size="12" font-weight="700" fill="#e0e6ed">nftables</text>
+    <text x="16" y="54" font-family="share-tech-mono" font-size="9" fill="#f5b0b6">inet w420_madre</text>
+    <text x="16" y="68" font-family="share-tech-mono" font-size="9" fill="#f5b0b6">input: policy drop</text>
+    <text x="16" y="82" font-family="share-tech-mono" font-size="9" fill="#f5b0b6">output: allowlist</text>
+    <text x="16" y="96" font-family="share-tech-mono" font-size="9" fill="#f5b0b6">только «свои»</text>
+    <text x="16" y="110" font-family="share-tech-mono" font-size="9" fill="#f5b0b6">пакеты проходят</text>
+  </g>
+
+  <!-- Madre badge -->
+  <g transform="translate(206,270)">
+    <rect x="0" y="0" width="770" height="56" rx="10" fill="#241a3d" stroke="#d896ff" stroke-width="2"/>
+    <text x="16" y="24" font-family="share-tech-mono" font-size="11" fill="#e8d0f5">
+      <tspan x="16" dy="0">MADRE TORQUEMADA — за штурвалом: Madre_helm (приветствие ИИ) + Madre_manager (default-deny, honeypot, watchdog)</tspan>
+      <tspan x="16" dy="18" font-size="9" fill="#b89ad8">Материнский ИИ смотрит на каждый пакет: «доверяем только своим — чужие все дропаем»</tspan>
+    </text>
+  </g>
+</svg>
