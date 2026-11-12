@@ -35,7 +35,7 @@
   function notify(tag, msg, color){
     const d=document.createElement('div');
     d.className='w420-notify';
-    d.style.cssText=`position:fixed;top:12px;right:12px;z-index:9999;background:#041204;border:1px solid ${color};padding:8px 12px;font-family:'Share Tech Mono',monospace;font-size:11px;color:#b6ffc4;min-width:200px;opacity:1;transition:opacity .5s`;
+    d.style.cssText=`position:fixed;top:12px;right:12px;z-index:9999;background:var(--panel);border:1px solid ${color};padding:8px 12px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--ink);min-width:200px;opacity:1;transition:opacity .5s`;
     d.innerHTML=`<div style="font-weight:700;color:${color}">${tag}</div><div>${msg}</div>`;
     document.body.appendChild(d);
     setTimeout(()=>{d.style.opacity=0;setTimeout(()=>d.remove(),500)},3500);
@@ -63,13 +63,13 @@
   function buildMenu(cmds){
     const menu=document.createElement('div');
     menu.className='w420-tray-menu';
-    menu.style.cssText='position:absolute;z-index:300;background:#061808;border:1px solid #00ff41;border-radius:6px;min-width:200px;padding:6px;font-family:\'Share Tech Mono\',monospace;font-size:11px;color:#b6ffc4;box-shadow:0 0 16px rgba(0,255,65,.25)';
+    menu.style.cssText='position:absolute;z-index:300;background:var(--head);border:1px solid var(--live);border-radius:6px;min-width:200px;padding:6px;font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--ink);box-shadow:0 0 16px var(--glow)';
     cmds.forEach(c=>{
       const btn=document.createElement('button');
-      btn.style.cssText='width:100%;background:transparent;border:none;color:#b6ffc4;text-align:left;padding:6px 8px;font-family:\'Share Tech Mono\',monospace;font-size:11px;cursor:pointer;border-radius:4px';
+      btn.style.cssText='width:100%;background:transparent;border:none;color:var(--ink);text-align:left;padding:6px 8px;font-family:\'Share Tech Mono\',monospace;font-size:11px;cursor:pointer;border-radius:4px';
       btn.innerHTML=c.label+ (c.kb?` <span style="opacity:.5;font-size:9px">${c.kb}</span>`:'');
-      btn.onmouseover=()=>{ btn.style.background='#00ff41'; btn.style.color='#000'; };
-      btn.onmouseout=()=>{ btn.style.background='transparent'; btn.style.color='#b6ffc4'; };
+      btn.onmouseover=()=>{ btn.style.background='var(--live)'; btn.style.color='#000'; };
+      btn.onmouseout=()=>{ btn.style.background='transparent'; btn.style.color='var(--ink)'; };
       btn.onclick=async e=>{
         e.stopPropagation(); closeAllMenus();
         if(c.action) c.action();
@@ -93,20 +93,20 @@
     app.state='open'; const w=STATE.win[id];
     if(!app.element.parentElement.classList.contains('w420-window')){
       const wrap=document.createElement('div'); wrap.className='w420-window';
-      wrap.style.cssText='position:fixed;background:#041204;border:1px solid #00ff41;border-radius:6px;box-shadow:0 0 30px rgba(0,255,65,.15),inset 0 0 20px rgba(0,255,65,.05);overflow:hidden;font-family:\'Share Tech Mono\',monospace;color:#b6ffc4;';
+      wrap.style.cssText='position:fixed;background:var(--panel);border:1px solid var(--live);border-radius:6px;box-shadow:0 0 30px var(--glow),inset 0 0 20px var(--glow);overflow:hidden;font-family:\'Share Tech Mono\',monospace;color:var(--ink);';
       const titlebar=document.createElement('div');
       titlebar.className='w420-titlebar';
-      titlebar.style.cssText='height:28px;background:#061808;border-bottom:1px solid #00ff41;display:flex;align-items:center;justify-content:space-between;user-select:none;padding:0 8px;cursor:default;';
-      const left=document.createElement('div'); left.style.cssText='display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:#00ff41;letter-spacing:1px;';
+      titlebar.style.cssText='height:28px;background:var(--head);border-bottom:1px solid var(--live);display:flex;align-items:center;justify-content:space-between;user-select:none;padding:0 8px;cursor:default;';
+      const left=document.createElement('div'); left.style.cssText='display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:var(--live);letter-spacing:1px;';
       const icon=document.createElement('span'); icon.style.cssText='font-size:13px'; icon.textContent=app.icon;
       const title=document.createElement('span'); title.textContent=app.label;
       left.appendChild(icon); left.appendChild(title);
       const right=document.createElement('div'); right.style.cssText='display:flex;gap:6px';
       const minb=document.createElement('button'); minb.textContent='\u2014';
       const closeb=document.createElement('button'); closeb.textContent='\u2715';
-      minb.style.cssText='background:transparent;border:1px solid #00ff41;color:#00ff41;width:20px;height:20px;font-size:10px;cursor:pointer;border-radius:3px';
+      minb.style.cssText='background:transparent;border:1px solid var(--live);color:var(--live);width:20px;height:20px;font-size:10px;cursor:pointer;border-radius:3px';
       closeb.style.cssText='background:transparent;border:1px solid #ff4444;color:#ff4444;width:20px;height:20px;font-size:10px;cursor:pointer;border-radius:3px';
-      minb.onmouseover=()=>minb.style.background='#00ff41'; minb.onmouseout=()=>minb.style.background='transparent';
+      minb.onmouseover=()=>minb.style.background='var(--live)'; minb.onmouseout=()=>minb.style.background='transparent';
       closeb.onmouseover=()=>closeb.style.background='#ff4444'; closeb.onmouseout=()=>closeb.style.background='transparent';
       right.appendChild(minb); right.appendChild(closeb);
       titlebar.appendChild(left); titlebar.appendChild(right);
@@ -250,13 +250,13 @@
   function renderTaskbar(){
     let tb=$('#w420-taskbar'); if(tb) tb.remove();
     tb=document.createElement('div'); tb.id='w420-taskbar';
-    tb.style.cssText='position:fixed;bottom:0;left:0;right:0;height:40px;background:#061808;border-top:1px solid #00ff41;display:flex;align-items:center;justify-content:space-between;padding:0 8px;z-index:900;font-family:\'Share Tech Mono\',monospace;font-size:11px;';
+    tb.style.cssText='position:fixed;bottom:0;left:0;right:0;height:40px;background:var(--head);border-top:1px solid var(--live);display:flex;align-items:center;justify-content:space-between;padding:0 8px;z-index:900;font-family:\'Share Tech Mono\',monospace;font-size:11px;';
     // кнопка TOOLS
     const tools=document.createElement('button');
     tools.textContent='TOOLS';
-    tools.style.cssText='background:transparent;border:1px solid #00ff41;color:#00ff41;padding:5px 14px;font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer;border-radius:4px;';
-    tools.onmouseover=()=>{tools.style.background='#00ff41';tools.style.color='#000';};
-    tools.onmouseout=()=>{tools.style.background='transparent';tools.style.color='#00ff41';};
+    tools.style.cssText='background:transparent;border:1px solid var(--live);color:var(--live);padding:5px 14px;font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer;border-radius:4px;';
+    tools.onmouseover=()=>{tools.style.background='var(--live)';tools.style.color='#000';};
+    tools.onmouseout=()=>{tools.style.background='transparent';tools.style.color='var(--live)';};
     tools.onclick=toggleToolsMenu;
     tb.appendChild(tools);
     // центр: открытые окна
@@ -265,7 +265,7 @@
     STATE.activeApps.forEach(id=>{
       const app=STATE.apps[id]; if(!app) return; const w=STATE.win[id];
       const btn=document.createElement('button');
-      btn.style.cssText=`background:${w.minimized?'#041204':'#00ff41'};border:1px solid #00ff41;color:${w.minimized?'#b6ffc4':'#000'};width:34px;height:30px;font-size:14px;cursor:pointer;border-radius:4px;display:flex;align-items:center;justify-content:center;`;
+      btn.style.cssText=`background:${w.minimized?'var(--panel)':'var(--live)'};border:1px solid var(--live);color:${w.minimized?'var(--ink)':'#000'};width:34px;height:30px;font-size:14px;cursor:pointer;border-radius:4px;display:flex;align-items:center;justify-content:center;`;
       btn.innerHTML=app.icon;
       btn.onclick=()=>{ if(w.minimized){ openWindow(id); } else if(STATE.focused===id){ minimizeWindow(id); } else { focusWindow(id); } };
       btn.oncontextmenu=e=>{ e.preventDefault(); openMenu(id, e.clientX, e.clientY); };
@@ -286,10 +286,10 @@
     ];
     trayItems.forEach(ti=>{
       const b=document.createElement('button');
-      b.style.cssText=`width:30px;height:30px;background:#041204;border:1px solid #00ff41;color:#b6ffc4;font-size:15px;cursor:pointer;border-radius:4px;display:flex;align-items:center;justify-content:center;`;
+      b.style.cssText=`width:30px;height:30px;background:var(--panel);border:1px solid var(--live);color:var(--ink);font-size:15px;cursor:pointer;border-radius:4px;display:flex;align-items:center;justify-content:center;`;
       b.textContent=ti.icon;
-      b.onmouseover=()=>{b.style.background='#00ff41';b.style.color='#000';};
-      b.onmouseout=()=>{b.style.background='#041204';b.style.color='#b6ffc4';};
+      b.onmouseover=()=>{b.style.background='var(--live)';b.style.color='#000';};
+      b.onmouseout=()=>{b.style.background='var(--panel)';b.style.color='var(--ink)';};
       const menu=buildMenu(ti.menu.cmds);
       document.body.appendChild(menu); menu.style.display='none';
       STATE.trays[ti.id]={button:b,menu};
@@ -311,15 +311,15 @@
     let tm=$('#w420-tools-menu');
     if(tm){ tm.remove(); STATE.toolsOpen=false; return; }
     tm=document.createElement('div'); tm.id='w420-tools-menu';
-    tm.style.cssText='position:fixed;bottom:48px;left:10px;z-index:310;background:#061808;border:1px solid #00ff41;border-radius:8px;min-width:280px;padding:10px;font-family:\'Share Tech Mono\',monospace;font-size:11px;color:#b6ffc4;max-height:calc(100vh - 120px);overflow:auto;';
+    tm.style.cssText='position:fixed;bottom:48px;left:10px;z-index:310;background:var(--head);border:1px solid var(--live);border-radius:8px;min-width:280px;padding:10px;font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--ink);max-height:calc(100vh - 120px);overflow:auto;';
     const grid=document.createElement('div');
     grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;';
     Object.values(STATE.apps).forEach(app=>{
       const b=document.createElement('button');
-      b.style.cssText='background:#041204;border:1px solid #00ff41;color:#b6ffc4;padding:8px 6px;font-size:10px;cursor:pointer;border-radius:6px;display:flex;flex-direction:column;align-items:center;gap:4px;';
+      b.style.cssText='background:var(--panel);border:1px solid var(--live);color:var(--ink);padding:8px 6px;font-size:10px;cursor:pointer;border-radius:6px;display:flex;flex-direction:column;align-items:center;gap:4px;';
       b.innerHTML=`<span style="font-size:22px">${app.icon}</span><span style="font-weight:600">${app.label}</span>`;
-      b.onmouseover=()=>{b.style.background='#00ff41';b.style.color='#000';};
-      b.onmouseout=()=>{b.style.background='#041204';b.style.color='#b6ffc4';};
+      b.onmouseover=()=>{b.style.background='var(--live)';b.style.color='#000';};
+      b.onmouseout=()=>{b.style.background='var(--panel)';b.style.color='var(--ink)';};
       b.onclick=()=>{ if(app.id==='settings'){const s=$('#spanel'); if(s) s.hidden=!s.hidden; toggleToolsMenu(); return;} openApp(app.id); toggleToolsMenu(); };
       grid.appendChild(b);
     });

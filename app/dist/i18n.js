@@ -19,7 +19,7 @@
   var DICTS = { ru: {}, en: window.I18N_EN || {}, es: window.I18N_ES || {} };
   var LANGS = ['ru', 'en', 'es'];
   var LANG = 'ru';
-  var SETTINGS = { lang: 'ru', theme: 'dark', radio_voice: true, radio_volume: 50 };
+  var SETTINGS = { lang: 'ru', theme: 'matrix', radio_voice: true, radio_volume: 50 };
 
   var tauriInvoke = function (cmd, args) {
     if (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) {
@@ -122,8 +122,10 @@
   }
 
   // --- тема ---
+  // dark — легаси-алиас matrix; остальные темы перечислены в CSS (:root[data-theme=...])
   function applyTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : 'dark');
+    if (theme === 'dark') theme = 'matrix';
+    document.documentElement.setAttribute('data-theme', theme || 'matrix');
   }
 
   // --- применение настроек к живым контролам ---
@@ -179,7 +181,7 @@
     if (vol) vol.addEventListener('input', function () { saveSettings({ radio_volume: Number(vol.value) }); });
     var reset = Q('#s-reset');
     if (reset) reset.addEventListener('click', function () {
-      SETTINGS = { lang: 'ru', theme: 'dark', radio_voice: true, radio_volume: 50 };
+      SETTINGS = { lang: 'ru', theme: 'matrix', radio_voice: true, radio_volume: 50 };
       store.set('w420.settings', SETTINGS);
       tauriInvoke('settings_set', { patch: SETTINGS }).catch(function () {});
       applyAll();
@@ -189,7 +191,7 @@
   // синхронизирует контролы панели с текущими настройками
   function syncPanel() {
     var lang = Q('#s-lang'); if (lang) lang.value = SETTINGS.lang || 'ru';
-    var theme = Q('#s-theme'); if (theme) theme.value = SETTINGS.theme === 'light' ? 'light' : 'dark';
+    var theme = Q('#s-theme'); if (theme) theme.value = (SETTINGS.theme === 'dark' ? 'matrix' : (SETTINGS.theme || 'matrix'));
     var voice = Q('#s-voice'); if (voice) voice.checked = !!SETTINGS.radio_voice;
     var vol = Q('#s-vol'); if (vol) vol.value = String(SETTINGS.radio_volume);
   }
