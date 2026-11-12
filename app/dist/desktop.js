@@ -137,8 +137,9 @@
     const titlebar=wrap.querySelector('.w420-titlebar');
     if(w.x===undefined){ w.x=60+STATE.activeApps.length*25; w.y=60+STATE.activeApps.length*25; }
     const sv=((loadLayout()||{}).win||{})[id]; // B5: восстановить сохранённую геометрию
-    if(sv){ w.x=sv.x??w.x; w.y=sv.y??w.y; w.w=sv.w??w.w; w.h=sv.h??w.h; if(sv.ws!==undefined) w.ws=sv.ws; }
-    if(w.ws===undefined) w.ws=STATE.wsIndex;
+    if(sv){ w.x=sv.x??w.x; w.y=sv.y??w.y; w.w=sv.w??w.w; w.h=sv.h??w.h; }
+    // B4: без сохранённой привязки окно открывается на ТЕКУЩЕМ рабочем столе (иначе после рестарта столов taskbar пустой)
+    if(sv&&sv.ws!==undefined) w.ws=Math.min(sv.ws, STATE.ws.length-1); else w.ws=STATE.wsIndex;
     wrap.style.left=(w.x||60)+'px'; wrap.style.top=(w.y||60)+'px';
     wrap.style.width=(w.w||'75%')+'px'; wrap.style.height=(w.h||'auto')+'px';
     wrap.style.display='flex'; wrap.style.flexDirection='column';
