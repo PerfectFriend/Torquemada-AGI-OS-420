@@ -28,14 +28,14 @@
 
   const STATE={
     apps:{}, win:{}, topZ:100, focused:null, activeApps:[], menus:{}, trays:{}, activeMenu:null, toolsOpen:false,
-    notifs:[], iconPos:{}, showDesktop:false, launcherOpen:false, notifPanelOpen:false, taskViewOpen:false, altTabOpen:false,
+    notifs:[], iconPos:{}, metrics:null, showDesktop:false, launcherOpen:false, notifPanelOpen:false, taskViewOpen:false, altTabOpen:false,
     ws:[[]], wsIndex:0
   };
   let fullscreen=false;
 
   // === Всплывающие уведомления (+ запись в центр уведомлений) ===
-  function notify(tag, msg, color){
-    STATE.notifs.push({tag, msg, ts:Date.now()});
+  function notify(tag, msg, color, app){
+    STATE.notifs.push({tag, msg, ts:Date.now(), app:app||null});
     if(STATE.notifs.length>50) STATE.notifs.shift();
     updateBell();
     const d=document.createElement('div');
@@ -172,7 +172,7 @@
     };
     titlebar.oncontextmenu=e=>{ e.preventDefault(); openWindowMenu(id, e.clientX, e.clientY); };
     wrap.onmousedown=()=>focusWindow(id);
-    STATE.win[id]=w; renderTaskbar(); notify('w420','opened: '+app.label,'var(--live)');
+    STATE.win[id]=w; renderTaskbar(); notify('w420','opened: '+app.label,'var(--live)',id);
   }
 
   // === Закрыть окно ===
@@ -373,8 +373,18 @@
     // правая часть: трей
     const tray=document.createElement('div'); tray.style.cssText='display:flex;gap:8px;align-items:center;';
     const trayItems=[
-      {id:'monitor',icon:'\ud83d\udda0',menu:{cmds:[{label:'Health dashboard',cmd:'health'},{label:'System operations',cmd:'sysops'},{label:'Network scanner',cmd:'net'},{label:'Emergency',cmd:'emergency'}]}},
-      {id:'chat',icon:'\ud83d\udcac',menu:{cmds:[{label:'Send',cmd:'term'}]}},
+      {id:'monitor',icon:'\ud83d\udda0',menu:{cmds:[
+        // D2: быстрые действия
+        {label:'🔍 Скан сети',cmd:'net'},
+        {label:'🚨 Emergency',action:()=>{ openApp('net'); setTimeout(()=>{ const b=$('#e-apply'); if(b){ b.scrollIntoView({block:'center'}); } },400); }},
+        {label:'🔒 Lock keys',action:()=>lockKeys()},
+        {label:'📡 SIEM dashboard',cmd:'siem'},
+        {label:'💚 Health: refresh all',action:()=>{ openApp('health'); const b=$('#hl-refresh'); if(b) b.click(); }},
+        {label:'─ все модули ─',action:()=>{}},
+        // D2: полный список зарегистрированных приложений
+        ...Object.values(STATE.apps).filter(a=>!a.aliasOf).map(a=>({label:a.icon+' '+a.label, cmd:a.id}))
+      ]}},
+      {id:'chat',icon:'\ud83d\udcac',menu:{cmds:[{label:'Send',cmd:'term'},{label:'🤖 AI-чат',cmd:'ai'},{label:'📻 Radio',cmd:'radio'}]}},
       {id:'ai',icon:'\ud83e\udde0',menu:{cmds:[{label:'Brief',action:()=>goAI('BRIEF')},{label:'Stop task',action:()=>stopTask('трей')},{label:'Lock keys',action:()=>lockKeys()},{label:'Full screen',action:()=>toggleFullscreen()}]}}
     ];
     trayItems.forEach(ti=>{
@@ -399,6 +409,12 @@
       tray.appendChild(b);
     });
     tb.appendChild(tray);
+    // D1: инлайн-монитор CPU/RAM/Net в трее (данные из system_metrics бэкенда)
+    const sm=document.createElement('span'); sm.id='w420-sysmon';
+    sm.style.cssText='color:var(--live);font-size:10px;cursor:default;user-select:none;white-space:nowrap;padding:0 4px;border:1px solid var(--line);border-radius:4px;background:var(--panel);';
+    sm.textContent=sysmonText();
+    sm.title='CPU / RAM / Net — обновление каждые 2 с (system_metrics)';
+    tray.appendChild(sm);
     const bell=document.createElement('button'); bell.id='w420-bell'; bell.textContent='🔔';
     bell.style.cssText='width:30px;height:30px;background:var(--panel);border:1px solid var(--live);color:var(--ink);font-size:13px;cursor:pointer;border-radius:4px;';
     bell.onclick=e=>{ e.stopPropagation(); toggleNotifPanel(); };
@@ -669,6 +685,10 @@
       const d=new Date(n.ts);
       const it=document.createElement('div'); it.className='w420-notif-item';
       it.innerHTML=`<div class="t">${d.toLocaleTimeString('ru-RU')} · ${n.tag}</div><div>${n.msg}</div>`;
+      if(n.app){ // D3: клик по уведомлению открывает соответствующее окно (deep-link)
+        it.style.cursor='pointer'; it.title='Открыть: '+n.app;
+        it.onclick=e=>{ e.stopPropagation(); closeNotifPanel(); openApp(n.app); };
+      }
       list.appendChild(it);
     });
     p.appendChild(list);
@@ -677,6 +697,30 @@
     h.querySelector('#w420-notif-clear').onclick=e=>{ e.stopPropagation(); STATE.notifs=[]; updateBell(); toggleNotifPanel(); toggleNotifPanel(); };
   }
   function closeNotifPanel(){ const p=$('#w420-notif-panel'); if(p) p.remove(); STATE.notifPanelOpen=false; }
+
+  // === D1. Инлайн-монитор системы в трее ===
+  function sysmonText(){
+    const m=STATE.metrics;
+    if(!m) return 'CPU … · RAM …';
+    const ram=(m.mem_used/1073741824).toFixed(1)+'/'+(m.mem_total/1073741824).toFixed(0)+'G';
+    let net='—';
+    try{ const c=navigator.connection; if(c&&c.downlink) net=c.downlink.toFixed(1)+'Mb/s'; }catch(e){}
+    return `CPU ${Math.round(m.cpu)}% (${m.cores} ядер) · RAM ${ram} · NET ${net}`;
+  }
+  function startSysmon(){
+    const tick=async()=>{
+      try{
+        if(NATIVE){ STATE.metrics=await inv('system_metrics'); }
+        else{ // веб-режим: приблизительная оценка
+          const m=await navigator.storage?.estimate?.()||{};
+          STATE.metrics={cpu:0,cores:navigator.hardwareConcurrency||0,mem_used:m.usage||0,mem_total:m.quota||0,uptime:0,os:'web',host:'browser'};
+        }
+      }catch(e){}
+      const el=$('#w420-sysmon'); if(el) el.textContent=sysmonText();
+      setTimeout(tick,2000);
+    };
+    tick();
+  }
 
   // === A2. Часы в трее + календарь по клику ===
   function startClock(){
@@ -987,7 +1031,8 @@
     openLauncher, closeLauncher, toggleNotifPanel, toggleCalendar, startClock,
     snapAt, snapFocused, showPreview, hidePreview, openTaskView, closeTaskView, shadeWindow, openWindowMenu, saveLayout, loadLayout,
     visibleApps, switchWs, newWs, closeWs, moveWindowToWs,
-    WALLPAPERS, applyWallpaper, wallpaperMenu, themeMenu
+    WALLPAPERS, applyWallpaper, wallpaperMenu, themeMenu,
+    startSysmon, sysmonText
   };
 
   // === Инициализация (регистрация 10 базовых приложений) ===
@@ -1015,6 +1060,7 @@
     initDesktopIcons(); // после регистрации всех приложений
     { const L=loadLayout(); if(L&&L.wsCount>1){ STATE.ws=Array.from({length:L.wsCount},()=>[]); STATE.wsIndex=Math.min(L.wsIndex||0,L.wsCount-1); renderTaskbar(); } }
     applyWallpaper(); // C1: обои при старте (свой выбор или дефолт темы)
+    startSysmon(); // D1: инлайн-монитор в трее
     setTimeout(()=>{ window.Desktop.openWindow('term'); }, 300);
   });
 
