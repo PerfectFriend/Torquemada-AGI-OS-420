@@ -184,7 +184,7 @@
     if(fullscreen){
       // выход: сворачиваем всё приложение из fullscreen
       if(NATIVE){
-        try{ await window.__TAURI__.window.getCurrentWindow().setFullscreen(false); }catch(e){}
+        try{ const r=await inv('app_fullscreen_toggle'); fullscreen=!!(r&&r.fullscreen); }catch(e){}
       } else if(document.exitFullscreen){ try{ await document.exitFullscreen(); }catch(e){} }
       fullscreen=false;
       document.body.classList.remove('w420-full');
@@ -192,7 +192,7 @@
     }else{
       // вход: всё приложение на весь экран, taskbar/tray остаются видимыми
       if(NATIVE){
-        try{ await window.__TAURI__.window.getCurrentWindow().setFullscreen(true); }catch(e){}
+        try{ const r=await inv('app_fullscreen_toggle'); fullscreen=!!(r&&r.fullscreen); }catch(e){}
       } else if(document.documentElement.requestFullscreen){ try{ await document.documentElement.requestFullscreen(); }catch(e){} }
       fullscreen=true;
       document.body.classList.add('w420-full');
