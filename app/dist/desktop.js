@@ -28,7 +28,8 @@
 
   const STATE={
     apps:{}, win:{}, topZ:100, focused:null, activeApps:[], menus:{}, trays:{}, activeMenu:null, toolsOpen:false,
-    notifs:[], iconPos:{}, showDesktop:false, launcherOpen:false, notifPanelOpen:false, taskViewOpen:false, altTabOpen:false
+    notifs:[], iconPos:{}, showDesktop:false, launcherOpen:false, notifPanelOpen:false, taskViewOpen:false, altTabOpen:false,
+    ws:[[]], wsIndex:0
   };
   let fullscreen=false;
 
@@ -58,7 +59,7 @@
     STATE.apps[id]={id,icon:cfg.icon||'\ud83d\udcc1',label:cfg.label||id,section:el,onOpen:cfg.onOpen,onClose:cfg.onClose,
       onBeforeClose:cfg.onBeforeClose,element:el,state:'hidden'};
     STATE.win[id]={x:60,y:60,w:Math.min(el.clientWidth||700, Math.round(window.innerWidth*0.72)),h:Math.min(el.clientHeight||500, Math.round(window.innerHeight*0.7)),minimized:false,
-      fullscreen:false,maximized:false,z:100,appIcon:null,menu:null};
+      fullscreen:false,maximized:false,z:100,appIcon:null,menu:null,ws:STATE.wsIndex};
     if(cfg.basicMenu){ STATE.win[id].menu=buildMenu(cfg.basicMenu); STATE.win[id].menuCmds=cfg.basicMenu.cmds; }
     notify('w420','app registered: '+cfg.label||id,'var(--live)');
   }
@@ -136,7 +137,8 @@
     const titlebar=wrap.querySelector('.w420-titlebar');
     if(w.x===undefined){ w.x=60+STATE.activeApps.length*25; w.y=60+STATE.activeApps.length*25; }
     const sv=((loadLayout()||{}).win||{})[id]; // B5: восстановить сохранённую геометрию
-    if(sv){ w.x=sv.x??w.x; w.y=sv.y??w.y; w.w=sv.w??w.w; w.h=sv.h??w.h; }
+    if(sv){ w.x=sv.x??w.x; w.y=sv.y??w.y; w.w=sv.w??w.w; w.h=sv.h??w.h; if(sv.ws!==undefined) w.ws=sv.ws; }
+    if(w.ws===undefined) w.ws=STATE.wsIndex;
     wrap.style.left=(w.x||60)+'px'; wrap.style.top=(w.y||60)+'px';
     wrap.style.width=(w.w||'75%')+'px'; wrap.style.height=(w.h||'auto')+'px';
     wrap.style.display='flex'; wrap.style.flexDirection='column';
@@ -333,10 +335,10 @@
     tools.onmouseout=()=>{tools.style.background='transparent';tools.style.color='var(--live)';};
     tools.onclick=toggleToolsMenu;
     tb.appendChild(tools);
-    // центр: открытые окна
+    // центр: открытые окна ТЕКУЩЕГО рабочего стола
     const center=document.createElement('div');
     center.style.cssText='display:flex;gap:6px;flex:1;justify-content:center;align-items:center;overflow-x:auto;';
-    STATE.activeApps.forEach(id=>{
+    visibleApps().forEach(id=>{
       const app=STATE.apps[id]; if(!app) return; const w=STATE.win[id];
       const btn=document.createElement('button');
       btn.style.cssText=`background:${w.minimized?'var(--panel)':'var(--live)'};border:1px solid var(--live);color:${w.minimized?'var(--ink)':'#000'};width:34px;height:30px;font-size:14px;cursor:pointer;border-radius:4px;display:flex;align-items:center;justify-content:center;`;
@@ -352,6 +354,22 @@
       }
     });
     tb.appendChild(center);
+    // B4: пейджер рабочих столов
+    const pager=document.createElement('div'); pager.id='w420-ws-pager';
+    pager.style.cssText='display:flex;gap:4px;align-items:center;padding:0 6px;border-left:1px solid var(--line);border-right:1px solid var(--line);';
+    STATE.ws.forEach((_,i)=>{
+      const b=document.createElement('button');
+      b.textContent=String(i+1);
+      b.title='Рабочий стол '+(i+1)+' (Win+Ctrl+←/→)';
+      b.style.cssText='width:22px;height:22px;background:'+(i===STATE.wsIndex?'var(--live)':'transparent')+';border:1px solid var(--live);color:'+(i===STATE.wsIndex?'#000':'var(--live)')+';font-size:10px;cursor:pointer;border-radius:3px;font-family:var(--fb);';
+      b.onclick=()=>switchWs(i);
+      pager.appendChild(b);
+    });
+    const plus=document.createElement('button'); plus.textContent='+'; plus.title='Новый рабочий стол (Win+Ctrl+D)';
+    plus.style.cssText='width:22px;height:22px;background:transparent;border:1px dashed var(--live);color:var(--live);font-size:11px;cursor:pointer;border-radius:3px;font-family:var(--fb);';
+    plus.onclick=()=>newWs();
+    pager.appendChild(plus);
+    tb.appendChild(pager);
     // правая часть: трей
     const tray=document.createElement('div'); tray.style.cssText='display:flex;gap:8px;align-items:center;';
     const trayItems=[
@@ -425,10 +443,14 @@
   // === Горячие клавиши ===
   document.addEventListener('keydown',e=>{
     if(e.altKey && e.key==='Enter'){ e.preventDefault(); toggleFullscreen(); }
-    if(e.metaKey && e.key==='d'){ e.preventDefault(); toggleShowDesktop(); }
-    if(e.metaKey && e.key==='m'){ e.preventDefault(); minimizeAll(); }
-    if(e.metaKey && e.key.startsWith('Arrow')){ e.preventDefault(); snapFocused(e.key.slice(5).toLowerCase()); }
-    if(e.metaKey && e.key==='Tab'){ e.preventDefault(); openTaskView(); }
+    if(e.metaKey && e.ctrlKey && e.key==='ArrowLeft'){ e.preventDefault(); switchWs(STATE.wsIndex-1); }
+    if(e.metaKey && e.ctrlKey && e.key==='ArrowRight'){ e.preventDefault(); switchWs(STATE.wsIndex+1); }
+    if(e.metaKey && e.ctrlKey && e.key==='d'){ e.preventDefault(); newWs(); }
+    if(e.metaKey && e.ctrlKey && e.key==='w'){ e.preventDefault(); closeWs(); }
+    if(e.metaKey && !e.ctrlKey && e.key==='d'){ e.preventDefault(); toggleShowDesktop(); }
+    if(e.metaKey && !e.ctrlKey && e.key==='m'){ e.preventDefault(); minimizeAll(); }
+    if(e.metaKey && !e.ctrlKey && e.key.startsWith('Arrow')){ e.preventDefault(); snapFocused(e.key.slice(5).toLowerCase()); }
+    if(e.metaKey && !e.ctrlKey && e.key==='Tab'){ e.preventDefault(); openTaskView(); }
     if((e.metaKey||e.ctrlKey) && e.key==='k'){ e.preventDefault(); STATE.launcherOpen?closeLauncher():openLauncher(); }
     if(e.key==='Escape'){ closeLauncher(); closeNotifPanel(); closeCalendar(); closeAllMenus(); }
     if(e.altKey && /\d/.test(e.key)){ const idx=parseInt(e.key)-1; if(STATE.activeApps[idx]){ focusWindow(STATE.activeApps[idx]); } }
@@ -501,7 +523,7 @@
   function toggleShowDesktop(){
     if(STATE.showDesktop){
       STATE.showDesktop=false;
-      STATE.activeApps.forEach(id=>{
+      visibleApps().forEach(id=>{
         const app=STATE.apps[id]; if(!app) return;
         const w=STATE.win[id];
         if(w.minimized){ w.minimized=false; app.state='open';
@@ -510,7 +532,7 @@
       notify('w420','окна восстановлены','var(--live)');
     }else{
       STATE.showDesktop=true;
-      STATE.activeApps.slice().forEach(id=>minimizeWindow(id));
+      visibleApps().slice().forEach(id=>minimizeWindow(id));
       notify('w420','показан рабочий стол','var(--wip)');
     }
     renderTaskbar();
@@ -519,7 +541,7 @@
   // === A6. Свернуть все (Win+M) ===
   function minimizeAll(){
     STATE.showDesktop=false;
-    STATE.activeApps.slice().forEach(id=>minimizeWindow(id));
+    visibleApps().slice().forEach(id=>minimizeWindow(id));
     notify('w420','все окна свёрнуты','var(--wip)');
   }
 
@@ -530,7 +552,7 @@
     w.maximized=false; wrap.classList.remove('w420-max');
   }
   function cascadeWindows(){
-    const ids=STATE.activeApps; if(!ids.length) return;
+    const ids=visibleApps(); if(!ids.length) return;
     ids.forEach((id,i)=>{
       _unhide(id);
       const w=STATE.win[id], wrap=STATE.apps[id].element.parentElement;
@@ -540,7 +562,7 @@
     renderTaskbar(); notify('w420','каскад: '+ids.length+' окн.','var(--live)');
   }
   function tileWindows(orient){
-    const ids=STATE.activeApps; const n=ids.length; if(!n) return;
+    const ids=visibleApps(); const n=ids.length; if(!n) return;
     const H=innerHeight-40;
     ids.forEach((id,i)=>{
       _unhide(id);
@@ -672,6 +694,39 @@
 
   // ================= ФАЗА B: оконный менеджер уровня WM =================
 
+  // === B4. Виртуальные рабочие столы (workspaces) ===
+  function visibleApps(){ return STATE.activeApps.filter(id=>STATE.win[id]&&STATE.win[id].ws===STATE.wsIndex); }
+  function switchWs(i){
+    if(i<0||i>=STATE.ws.length) return;
+    STATE.wsIndex=i;
+    STATE.activeApps.forEach(id=>{
+      const app=STATE.apps[id]; if(!app) return;
+      const w=STATE.win[id], wrap=app.element.parentElement;
+      if(w.ws!==i){ wrap.style.display='none'; }
+      else if(!w.minimized){ wrap.style.display='flex'; app.element.style.display='flex'; app.state='open'; }
+    });
+    const vis=visibleApps();
+    STATE.focused=vis.find(id=>!STATE.win[id].minimized)||vis[0]||null;
+    renderTaskbar(); saveLayout();
+    notify('w420','рабочий стол '+(i+1)+' / '+STATE.ws.length,'var(--live)');
+  }
+  function newWs(){ STATE.ws.push([]); switchWs(STATE.ws.length-1); }
+  function closeWs(){
+    if(STATE.ws.length<=1) return;
+    const cur=STATE.wsIndex, ids=visibleApps();
+    ids.forEach(id=>{ STATE.win[id].ws=Math.max(0,cur-1); });
+    STATE.ws.splice(cur,1);
+    switchWs(Math.min(cur, STATE.ws.length-1));
+    notify('w420','рабочий стол закрыт, окна перенесены','var(--wip)');
+  }
+  function moveWindowToWs(id, wsIdx){
+    const w=STATE.win[id]; if(!w||wsIdx>=STATE.ws.length) return;
+    w.ws=wsIdx;
+    if(wsIdx!==STATE.wsIndex){ const wrap=STATE.apps[id].element.parentElement; wrap.style.display='none'; }
+    renderTaskbar(); saveLayout();
+    notify('w420','окно → рабочий стол '+(wsIdx+1),'var(--live)');
+  }
+
   // === B1. Snap: геометрия прилипания к краям ===
   function snapAt(x,y,ww,hh){
     const W=innerWidth, H=innerHeight-40, E=14;
@@ -729,8 +784,23 @@
     const ov=document.createElement('div'); ov.id='w420-taskview';
     ov.style.cssText='position:fixed;inset:0 0 40px 0;z-index:960;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(6px);padding:24px;overflow:auto;';
     const grid=document.createElement('div'); grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;';
-    if(!STATE.activeApps.length){ grid.innerHTML='<div style="opacity:.6">Нет открытых окон — откройте из TOOLS или двойным кликом по иконке десктопа</div>'; }
-    STATE.activeApps.forEach(id=>{
+    if(!visibleApps().length){ grid.innerHTML='<div style="opacity:.6">Нет открытых окон — откройте из TOOLS или двойным кликом по иконке десктопа</div>'; }
+    // B4: полоса рабочих столов сверху task view
+    const wsStrip=document.createElement('div');
+    wsStrip.style.cssText='display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;';
+    STATE.ws.forEach((_,i)=>{
+      const cnt=STATE.activeApps.filter(id=>STATE.win[id]&&STATE.win[id].ws===i&&!STATE.win[id].minimized).length;
+      const b=document.createElement('button');
+      b.className='a'; b.style.cssText='padding:6px 12px;'+(i===STATE.wsIndex?'border-width:2px;box-shadow:0 0 10px var(--glow);':'');
+      b.textContent='🖥 '+(i+1)+' ('+cnt+')';
+      b.onclick=()=>{ switchWs(i); closeTaskView(); };
+      wsStrip.appendChild(b);
+    });
+    const nb=document.createElement('button'); nb.className='a'; nb.textContent='+ новый стол (Win+Ctrl+D)';
+    nb.onclick=()=>{ newWs(); closeTaskView(); };
+    wsStrip.appendChild(nb);
+    ov.appendChild(wsStrip);
+    visibleApps().forEach(id=>{
       const app=STATE.apps[id]; if(!app) return;
       const wrap=app.element.parentElement;
       const card=document.createElement('div');
@@ -771,7 +841,7 @@
   document.addEventListener('keydown',e=>{
     if(e.altKey && e.key==='Tab'){
       e.preventDefault();
-      if(!STATE.altTabOpen){ altList=STATE.activeApps.slice(); if(!altList.length) return; altSel=1%altList.length; STATE.altTabOpen=true; }
+      if(!STATE.altTabOpen){ altList=visibleApps().slice(); if(!altList.length) return; altSel=1%altList.length; STATE.altTabOpen=true; }
       else altSel=(altSel+1)%altList.length;
       showAltSwitcher();
     }
@@ -802,6 +872,12 @@
       {label: w.shaded?'Развернуть тело окна':'Свернуть в заголовок (shade)', action:()=>shadeWindow(id)},
       {label:'Во весь экран приложения (Alt+Enter)', action:()=>toggleFullscreen()}
     ];
+    // B4: перенос окна на другой рабочий стол
+    if(STATE.ws.length>1||true){
+      cmds.push({label:'→ на рабочий стол 1', action:()=>moveWindowToWs(id,0)});
+      for(let i=1;i<STATE.ws.length;i++) cmds.push({label:'→ на рабочий стол '+(i+1), action:()=>moveWindowToWs(id,i)});
+      cmds.push({label:'→ новый рабочий стол', action:()=>{ newWs(); moveWindowToWs(id, STATE.wsIndex); }});
+    }
     if(w.menuCmds) cmds.push(...w.menuCmds);
     cmds.push({label:'Закрыть', action:()=>closeWindow(id)});
     const m=buildMenu(cmds);
@@ -815,8 +891,8 @@
   function saveLayout(){
     clearTimeout(saveTimer);
     saveTimer=setTimeout(()=>{
-      const L={win:{}, order:STATE.activeApps.slice()};
-      Object.entries(STATE.win).forEach(([id,w])=>{ L.win[id]={x:w.x,y:w.y,w:w.w,h:w.h,minimized:!!w.minimized,maximized:!!w.maximized,shaded:!!w.shaded}; });
+      const L={win:{}, order:STATE.activeApps.slice(), ws:STATE.ws.map(()=>0), wsIndex:STATE.wsIndex, wsCount:STATE.ws.length};
+      Object.entries(STATE.win).forEach(([id,w])=>{ L.win[id]={x:w.x,y:w.y,w:w.w,h:w.h,minimized:!!w.minimized,maximized:!!w.maximized,shaded:!!w.shaded,ws:w.ws??0}; });
       try{ localStorage.setItem('w420-layout', JSON.stringify(L)); }catch(e){}
     },400);
   }
@@ -837,7 +913,8 @@
     openApp, renderTaskbar, notify, apps:()=>STATE.apps, win:()=>STATE.win, state:()=>STATE,
     initDesktopIcons, toggleShowDesktop, minimizeAll, cascadeWindows, tileWindows,
     openLauncher, closeLauncher, toggleNotifPanel, toggleCalendar, startClock,
-    snapAt, snapFocused, showPreview, hidePreview, openTaskView, closeTaskView, shadeWindow, openWindowMenu, saveLayout, loadLayout
+    snapAt, snapFocused, showPreview, hidePreview, openTaskView, closeTaskView, shadeWindow, openWindowMenu, saveLayout, loadLayout,
+    visibleApps, switchWs, newWs, closeWs, moveWindowToWs
   };
 
   // === Инициализация (регистрация 10 базовых приложений) ===
@@ -863,6 +940,7 @@
     register('health',deep('Health','#hl-out','\ud83e\ude7a'));
     register('settings',{icon:'\u2699\ufe0f',label:'Settings',section:'#spanel',basicMenu:{cmds:[{label:'Close',action:()=>{const s=$('#spanel');if(s)s.hidden=true}}]}});
     initDesktopIcons(); // после регистрации всех приложений
+    { const L=loadLayout(); if(L&&L.wsCount>1){ STATE.ws=Array.from({length:L.wsCount},()=>[]); STATE.wsIndex=Math.min(L.wsIndex||0,L.wsCount-1); renderTaskbar(); } }
     setTimeout(()=>{ window.Desktop.openWindow('term'); }, 300);
   });
 
