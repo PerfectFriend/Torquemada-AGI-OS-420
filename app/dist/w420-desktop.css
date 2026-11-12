@@ -1,0 +1,115 @@
+/* w420-desktop.css — Desktop OS layer: окна, панель задач, tray, fullscreen
+   Матричный неоновый киберпанк. Адаптивные окна, drag, alt+Enter fullscreen
+*/
+
+/* --- окно --- */
+.w420-window {
+  display: none;
+  flex-direction: column;
+  box-shadow: 0 0 30px rgba(0,255,65,.15), inset 0 0 20px rgba(0,255,65,.05);
+  will-change: transform, opacity;
+  transition: box-shadow .25s ease, transform .25s ease, opacity .2s ease;
+}
+.w420-window.w420-anim { transform: scale(1.02); opacity: 1; }
+.w420-window.w420-min { transform: scale(.85); opacity: .35; }
+
+.w420-titlebar {
+  cursor: move;
+  user-select: none;
+}
+.w420-titlebar .win-btn {
+  width: 22px; height: 22px; border-radius: 3px; font-size: 10px;
+  border: 1px solid var(--live); background: transparent; color: var(--live);
+  cursor: pointer; transition: all .15s;
+}
+.w420-titlebar .win-btn:hover { background: var(--live); color: #000; }
+.w420-titlebar .win-btn.close { border-color: #ff4444; color: #ff4444; }
+.w420-titlebar .win-btn.close:hover { background: #ff4444; color: #000; }
+
+/* --- панель задач --- */
+#w420-taskbar {
+  background: rgba(4,18,4,.95);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--live);
+  z-index: 900;
+}
+.w420-task-btn { transition: all .15s; }
+.w420-task-btn.active { box-shadow: 0 0 10px var(--live); border-color: #fff; }
+.w420-task-btn.w420-active { background: var(--live) !important; color: #000 !important; }
+.w420-task-btn.w420-focused { box-shadow: 0 0 12px var(--live); }
+.w420-badge {
+  position: absolute; top: -4px; right: -4px;
+  background: #ff4444; color: #000;
+  width: 14px; height: 14px; font-size: 9px;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-weight: 700; border: 1px solid #fff;
+  animation: badge-pulse 2s infinite;
+}
+@keyframes badge-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+#w420-taskbar .w420-task-btn.w420-min { color: var(--wip); }
+
+/* --- трей --- */
+#w420-tray {
+  background: rgba(4,18,4,.95);
+  backdrop-filter: blur(8px);
+  border-left: 1px solid var(--live);
+  padding-left: 8px;
+  z-index: 900;
+}
+.w420-tray-btn {
+  width: 30px; height: 30px;
+  background: var(--panel); border: 1px solid var(--live);
+  color: var(--ink); font-size: 15px; cursor: pointer; border-radius: 4px;
+  transition: all .15s;
+}
+.w420-tray-btn:hover { background: var(--live); color: #000; box-shadow: 0 0 10px var(--live); }
+
+.w420-tray-menu {
+  background: rgba(4,18,4,.95);
+  border: 1px solid var(--live);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(0,0,0,.5);
+  min-width: 200px;
+}
+.w420-tray-menu .w420-menu-item {
+  background: transparent; border: none; color: var(--ink); text-align: left;
+  padding: 6px 8px; font-family: inherit; font-size: 11px; cursor: pointer;
+}
+.w420-tray-menu .w420-menu-item:hover { background: var(--live); color: #000; }
+
+/* --- кнопка TOOLS --- */
+#w420-tools-menu {
+  background: rgba(4,18,4,.95);
+  border: 1px solid var(--live);
+  backdrop-filter: blur(8px);
+  z-index: 310;
+}
+#w420-tools-menu .w420-tools-btn {
+  background: var(--panel); border: 1px solid var(--live); color: var(--ink);
+  transition: all .15s;
+}
+#w420-tools-menu .w420-tools-btn:hover {
+  background: var(--live); color: #000; box-shadow: 0 0 12px var(--live);
+}
+
+/* --- уведомления --- */
+.w420-notify {
+  background: rgba(4,18,4,.95);
+  border: 1px solid var(--live);
+  backdrop-filter: blur(8px);
+  color: #fff;
+}
+
+/* --- fullscreen --- */
+.w420-full #main { padding-bottom: 40px; }
+.w420-fs {
+  top: 0 !important; left: 0 !important;
+  width: 100vw !important; height: 100vh !important;
+  z-index: 250 !important;
+  border: none !important; box-shadow: none !important;
+}
+.w420-fs .w420-titlebar { display: none !important; }
+.w420-full #w420-taskbar { display: none !important; }
+
+/* --- адаптивность --- */
+@media (max-width: 1200px) { .w420-window { width: 100%; left: 0 !important; } }

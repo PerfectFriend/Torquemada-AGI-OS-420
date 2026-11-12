@@ -412,10 +412,16 @@ const b64=u=>btoa(String.fromCharCode(...u)),unb64=s=>Uint8Array.from(atob(s),c=
 const sha=async s=>hex(await crypto.subtle.digest('SHA-256',enc.encode(s)));
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 
-/* NAV */
+/* NAV — Desktop: навигация ведёт через оконный менеджер Desktop */
 const tabs=[['term','TERMINAL','live'],['vault','QFS VAULT','live'],['id','DIGITAL ID','live'],['map','MIND MAP','live'],['radio','RADIO','live'],['audit','AUDIT','live'],['key','WALLET','live'],['wallet','MINT · DEX','sim'],['ai','AGI ASSISTANT','sim'],['net','СЕТЬ · ХОСТЫ','live']];
 tabs.forEach(([id,l,st])=>{const b=document.createElement('button');b.textContent=l;b.className=st+(id==='term'?' on':'');b.onclick=()=>show(id);b.dataset.id=id;$('#nav').appendChild(b)});
-function show(id){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));if(id==='map')sizeMap();if(id==='audit')drawAudit()}
+function show(id){
+  if(window.Desktop) Desktop.openApp(id);
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+id));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));
+  if(id==='map'&&typeof sizeMap==='function')sizeMap();
+  if(id==='audit'&&typeof drawAudit==='function')drawAudit();
+}
 
 /* HUD (real data where the browser exposes it) */
 $('#h-cores').textContent=navigator.hardwareConcurrency||'n/a';
@@ -729,5 +735,7 @@ if(window.__TAURI__&&window.__TAURI__.core){
 <script src="madre.js"></script>
 <script src="health.js"></script>
 <script src="hud.js"></script>
+<link rel="stylesheet" href="w420-desktop.css">
+<script src="desktop.js"></script>
 </body>
 </html>
