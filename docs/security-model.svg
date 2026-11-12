@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="340" viewBox="0 0 960 340" font-family="monospace">
+  <rect width="960" height="340" fill="#050a08"/>
+  <text x="480" y="28" fill="#39ff6a" font-size="16" text-anchor="middle" font-weight="bold">Модель безопасности: default-deny + границы доверия</text>
+  <g font-size="11" text-anchor="middle">
+    <rect x="40" y="60" width="250" height="110" rx="8" fill="#1a0d0d" stroke="#ff6a6a"/>
+    <text x="165" y="86" fill="#ff8a8a" font-weight="bold">nftables (root, после согласия)</text>
+    <text x="165" y="104" fill="#9fe8b5">default-deny: drop всего входящего</text>
+    <text x="165" y="120" fill="#9fe8b5">исходящий — только allowlist «своим»</text>
+    <text x="165" y="136" fill="#9fe8b5">honeypot 22/2222/3389/8080/8443/9200</text>
+    <text x="165" y="152" fill="#9fe8b5">Emergency-режим: drop всего</text>
+    <rect x="355" y="60" width="250" height="110" rx="8" fill="#0a1f12" stroke="#39ff6a"/>
+    <text x="480" y="86" fill="#39ff6a" font-weight="bold">W420 процесс (user, без root)</text>
+    <text x="480" y="104" fill="#9fe8b5">ключи провайдеров: AES-256-GCM на диске</text>
+    <text x="480" y="120" fill="#9fe8b5">во фронтенд — только маска «…abcd»</text>
+    <text x="480" y="136" fill="#9fe8b5">TTS-токен в заголовке, не форвардится</text>
+    <text x="480" y="152" fill="#9fe8b5">sidecar sing-box управляется из Rust</text>
+    <rect x="670" y="60" width="250" height="110" rx="8" fill="#0a1f12" stroke="#ffd166"/>
+    <text x="795" y="86" fill="#ffd166" font-weight="bold">Внешние сервисы</text>
+    <text x="795" y="104" fill="#9fe8b5">NVIDIA NIM (Mistral Large 4)</text>
+    <text x="795" y="120" fill="#9fe8b5">другие LLM-провайдеры по ключам</text>
+    <text x="795" y="136" fill="#9fe8b5">RSS-новости, Shodan/CVE-сканеры</text>
+    <text x="795" y="152" fill="#9fe8b5">Tor (sidecar) для .onion</text>
+    <rect x="200" y="220" width="560" height="70" rx="8" fill="#0a1f12" stroke="#39ff6a"/>
+    <text x="480" y="246" fill="#39ff6a" font-weight="bold">Границы: root только через root_setup.sh (интерактивное согласие)</text>
+    <text x="480" y="264" fill="#9fe8b5">NOPASSWD sudo — узко на nft/tcpdump/setcap · секреты вне git (.gitignore: *.db, .w420/, ключи)</text>
+    <text x="480" y="280" fill="#9fe8b5">аудит: gitleaks/trivy sidecars · лог событий в SQLite (зашифрован ключами модулей)</text>
+  </g>
+  <g stroke="#39ff6a" stroke-width="2" fill="none" stroke-dasharray="6 4">
+    <line x1="290" y1="115" x2="355" y2="115"/>
+    <line x1="605" y1="115" x2="670" y2="115"/>
+    <line x1="165" y1="170" x2="300" y2="220"/>
+    <line x1="795" y1="170" x2="660" y2="220"/>
+  </g>
+</svg>

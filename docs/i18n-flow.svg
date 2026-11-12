@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="300" viewBox="0 0 960 300" font-family="monospace">
+  <rect width="960" height="300" fill="#050a08"/>
+  <text x="480" y="28" fill="#39ff6a" font-size="16" text-anchor="middle" font-weight="bold">i18n: settings → bridge → render (RU / EN / ES)</text>
+  <g font-size="11" text-anchor="middle">
+    <rect x="40" y="70" width="200" height="80" rx="8" fill="#0a1f12" stroke="#ffd166"/>
+    <text x="140" y="98" fill="#ffd166" font-weight="bold">⚙ Настройки → Язык</text>
+    <text x="140" y="116" fill="#9fe8b5">RU / EN / ES dropdown</text>
+    <text x="140" y="132" fill="#9fe8b5">settings_set({lang})</text>
+    <rect x="300" y="70" width="200" height="80" rx="8" fill="#0a1f12" stroke="#39ff6a"/>
+    <text x="400" y="98" fill="#39ff6a" font-weight="bold">i18n.js bridge</text>
+    <text x="400" y="116" fill="#9fe8b5">i18n.ru/en/es.js словари</text>
+    <text x="400" y="132" fill="#9fe8b5">ключ = русская строка</text>
+    <rect x="560" y="70" width="200" height="80" rx="8" fill="#0a1f12" stroke="#39ff6a"/>
+    <text x="660" y="98" fill="#39ff6a" font-weight="bold">Перерендер DOM</text>
+    <text x="660" y="116" fill="#9fe8b5">data-i18n атрибуты + MutationObserver</text>
+    <text x="660" y="132" fill="#9fe8b5">горячая смена, без перезапуска</text>
+    <rect x="820" y="70" width="110" height="80" rx="8" fill="#0a1f12" stroke="#39ff6a"/>
+    <text x="875" y="98" fill="#39ff6a" font-weight="bold">TTS голос</text>
+    <text x="875" y="116" fill="#9fe8b5">voice_say(lang)</text>
+    <text x="875" y="132" fill="#9fe8b5">учитывает язык</text>
+  </g>
+  <g stroke="#39ff6a" stroke-width="2" fill="none">
+    <line x1="240" y1="110" x2="300" y2="110"/><polygon points="300,110 292,106 292,114" fill="#39ff6a"/>
+    <line x1="500" y1="110" x2="560" y2="110"/><polygon points="560,110 552,106 552,114" fill="#39ff6a"/>
+    <line x1="760" y1="110" x2="820" y2="110"/><polygon points="820,110 812,106 812,114" fill="#39ff6a"/>
+  </g>
+  <g font-size="10" fill="#9fe8b5" text-anchor="middle">
+    <rect x="300" y="190" width="360" height="60" rx="8" fill="#0a1f12" stroke="#39ff6a"/>
+    <text x="480" y="212" fill="#39ff6a" font-weight="bold">Покрытие: 701 ключ × 3 языка</text>
+    <text x="480" y="230">fallback на русский · UI-строки покрыты ~87% · node --check на всех локалях</text>
+  </g>
+</svg>

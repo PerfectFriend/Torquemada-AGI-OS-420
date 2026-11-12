@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="360" viewBox="0 0 960 360" font-family="monospace">
+  <rect width="960" height="360" fill="#050a08"/>
+  <text x="480" y="28" fill="#39ff6a" font-size="16" text-anchor="middle" font-weight="bold">Поток установки одной командой</text>
+  <g font-size="11" fill="#9fe8b5" text-anchor="middle">
+    <rect x="30" y="60" width="190" height="70" rx="8" fill="#0a1f12" stroke="#39ff6a"/>
+    <text x="125" y="88" fill="#39ff6a" font-weight="bold">1. curl … | bash</text>
+    <text x="125" y="106">или git clone + bash SETUP.sh</text>
+    <rect x="255" y="60" width="190" height="70" rx="8" fill="#0a1f12" stroke="#39ff6a"/>
+    <text x="350" y="88" fill="#39ff6a" font-weight="bold">2. Проверка зависимостей</text>
+    <text x="350" y="104">git curl jq sudo cargo node</text>
+    <text x="350" y="118">нет → подсказка apt/dnf</text>
+    <rect x="480" y="60" width="190" height="70" rx="8" fill="#0a1f12" stroke="#39ff6a"/>
+    <text x="575" y="88" fill="#39ff6a" font-weight="bold">3. Сборка / релиз</text>
+    <text x="575" y="104">cargo build --release</text>
+    <text x="575" y="118">или .deb из GitHub Releases</text>
+    <rect x="705" y="60" width="225" height="70" rx="8" fill="#0a1f12" stroke="#39ff6a"/>
+    <text x="817" y="88" fill="#39ff6a" font-weight="bold">4. Установка в ~/.w420</text>
+    <text x="817" y="104">бинарник + dist + sidecars + иконки</text>
+    <text x="817" y="118">.desktop + systemd --user + autostart</text>
+    <rect x="255" y="180" width="190" height="70" rx="8" fill="#1a0d0d" stroke="#ff6a6a"/>
+    <text x="350" y="208" fill="#ff8a8a" font-weight="bold">5. root_setup.sh — опционально</text>
+    <text x="350" y="226" fill="#9fe8b5">спросит подтверждение (y/N)</text>
+    <text x="350" y="240" fill="#9fe8b5">nftables base + NOPASSWD</text>
+    <rect x="480" y="180" width="190" height="70" rx="8" fill="#0a1f12" stroke="#39ff6a"/>
+    <text x="575" y="208" fill="#39ff6a" font-weight="bold">6. Первый запуск</text>
+    <text x="575" y="226">иконка в меню приложений</text>
+    <text x="575" y="240">десктоп-режим + туториал</text>
+    <rect x="705" y="180" width="225" height="70" rx="8" fill="#0a1f12" stroke="#39ff6a"/>
+    <text x="817" y="208" fill="#39ff6a" font-weight="bold">7. Готово</text>
+    <text x="817" y="226">язык/тему — в ⚙ Настройки</text>
+    <text x="817" y="240">ключи шифруются AES-256-GCM</text>
+  </g>
+  <g stroke="#39ff6a" stroke-width="2" fill="none">
+    <line x1="220" y1="95" x2="255" y2="95"/><polygon points="255,95 247,91 247,99" fill="#39ff6a"/>
+    <line x1="445" y1="95" x2="480" y2="95"/><polygon points="480,95 472,91 472,99" fill="#39ff6a"/>
+    <line x1="670" y1="95" x2="705" y2="95"/><polygon points="705,95 697,91 697,99" fill="#39ff6a"/>
+    <line x1="817" y1="130" x2="817" y2="180"/><polygon points="817,180 813,172 821,172" fill="#39ff6a"/>
+    <line x1="705" y1="215" x2="670" y2="215"/><polygon points="670,215 678,211 678,219" fill="#39ff6a"/>
+    <line x1="480" y1="215" x2="445" y2="215"/><polygon points="445,215 453,211 453,219" fill="#39ff6a"/>
+    <line x1="350" y1="130" x2="350" y2="180" stroke="#ff6a6a"/><polygon points="350,180 346,172 354,172" fill="#ff6a6a"/>
+    <line x1="445" y1="215" x2="480" y2="215" stroke="#39ff6a"/>
+  </g>
+</svg>

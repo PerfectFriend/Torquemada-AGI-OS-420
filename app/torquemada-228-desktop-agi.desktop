@@ -1,0 +1,16 @@
+[Desktop Entry]
+Name=Torquemada 228 AGI
+Name[ru]=Торквемада 228 AGI
+Name[en]=Torquemada 228 AGI
+Name[es]=Torquemada 228 AGI
+Comment=Autonomous cybersecurity OS with helm AI (Madre Torquemada)
+Comment[ru]=Автономная ОС кибербезопасности с управляющим ИИ «Мать Торквемада»
+Comment[en]=Autonomous cybersecurity OS with helm AI (Madre Torquemada)
+Comment[es]=SO autónoma de ciberseguridad con IA timonel (Madre Torquemada)
+Exec=/home/USER/.w420/opt/w420/w420 %U
+Terminal=false
+Type=Application
+Categories=Security;Utility;
+StartupWMClass=Torquemada228AGI
+Icon=torquemada-228
+X-GNOME-Autostart-enabled=true

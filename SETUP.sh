@@ -108,12 +108,15 @@ for b in sing-box trivy gitleaks; do
 done
 
 # --------------------------------------------------------------
-# Иконки
+# Иконки (все размеры из app/icons → hicolor)
 # --------------------------------------------------------------
-ICON_SRC="$ROOT/app/src-tauri/icons/128x128.png"
-if [[ -f "$ICON_SRC" ]]; then
-    install -Dm644 "$ICON_SRC" "$DESKTOP_DIR/../icons/hicolor/128x128/apps/torquemada-228.png" 2>/dev/null || true
-fi
+for SZ in 32 64 128 256 512; do
+    ICON_SRC="$ROOT/app/icons/torquemada-228-$SZ.png"
+    [[ -f "$ICON_SRC" ]] || ICON_SRC="$ROOT/app/src-tauri/icons/128x128.png"
+    install -Dm644 "$ICON_SRC" "$DESKTOP_DIR/../icons/hicolor/${SZ}x${SZ}/apps/torquemada-228.png" 2>/dev/null || true
+done
+install -Dm644 "$ROOT/app/icons/torquemada-228.png" "$DESKTOP_DIR/../icons/hicolor/512x512/apps/torquemada-228.png" 2>/dev/null || true
+gtk-update-icon-cache "$HOME_DIR/.local/share/icons/hicolor" 2>/dev/null || true
 
 # --------------------------------------------------------------
 # Автозагрузка: desktop file + systemd --user
@@ -125,8 +128,10 @@ Name=Torquemada 228 AGI
 Name[ru]=Торквемада 228 AGI
 Name[en]=Torquemada 228 AGI
 Name[es]=Torquemada 228 AGI
-Comment=Автономная OS кибербезопасности с материнским ИИ (Madre)
+Comment=Autonomous cybersecurity OS with helm AI (Madre Torquemada)
 Comment[ru]=Автономная ОС кибербезопасности с управляющим ИИ «Мать Торквемада»
+Comment[en]=Autonomous cybersecurity OS with helm AI (Madre Torquemada)
+Comment[es]=SO autónoma de ciberseguridad con IA timonel (Madre Torquemada)
 Exec=$W420_DIR/opt/w420/w420 %U
 Terminal=false
 Type=Application
@@ -135,6 +140,7 @@ StartupWMClass=Torquemada228AGI
 Icon=torquemada-228
 X-GNOME-Autostart-enabled=true
 EOF
+mkdir -p "$HOME_DIR/.config/autostart"
 ln -sfn "$DESKTOP_DIR/torquemada-228-desktop-agi.desktop" "$HOME_DIR/.config/autostart/" 2>/dev/null || true
 
 cat > "$USER_SYSTEMD/torquemada-228-agi.service" <<EOF
