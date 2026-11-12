@@ -102,19 +102,30 @@
       const title=document.createElement('span'); title.textContent=app.label;
       left.appendChild(icon); left.appendChild(title);
       const right=document.createElement('div'); right.style.cssText='display:flex;gap:6px';
+      const maxb=document.createElement('button'); maxb.textContent=String.fromCharCode(9634); maxb.title='Развернуть / восстановить';
       const minb=document.createElement('button'); minb.textContent='\u2014';
       const closeb=document.createElement('button'); closeb.textContent='\u2715';
       minb.style.cssText='background:transparent;border:1px solid var(--live);color:var(--live);width:20px;height:20px;font-size:10px;cursor:pointer;border-radius:3px';
+      maxb.style.cssText='background:transparent;border:1px solid var(--live);color:var(--live);width:20px;height:20px;font-size:10px;cursor:pointer;border-radius:3px';
       closeb.style.cssText='background:transparent;border:1px solid #ff4444;color:#ff4444;width:20px;height:20px;font-size:10px;cursor:pointer;border-radius:3px';
       minb.onmouseover=()=>minb.style.background='var(--live)'; minb.onmouseout=()=>minb.style.background='transparent';
+      maxb.onmouseover=()=>maxb.style.background='var(--live)'; maxb.onmouseout=()=>maxb.style.background='transparent';
       closeb.onmouseover=()=>closeb.style.background='#ff4444'; closeb.onmouseout=()=>closeb.style.background='transparent';
-      right.appendChild(minb); right.appendChild(closeb);
+      right.appendChild(minb); right.appendChild(maxb); right.appendChild(closeb);
       titlebar.appendChild(left); titlebar.appendChild(right);
       wrap.appendChild(titlebar);
+      // resize-хендлы по краям и углам окна (внутри wrap, т.к. у wrap overflow:hidden)
+      ['n','s','e','w','ne','nw','se','sw'].forEach(d=>{
+        const h=document.createElement('div'); h.className='w420-rz w420-rz-'+d; h.dataset.dir=d;
+        h.onmousedown=e=>startResize(e,id,d);
+        wrap.appendChild(h);
+      });
       app.element.parentNode.insertBefore(wrap, app.element);
       wrap.appendChild(app.element);
       w.appIcon=icon; w.titlebar=titlebar; w.wrap=wrap;
       minb.onclick=e=>{ e.stopPropagation(); minimizeWindow(id); };
+      maxb.onclick=e=>{ e.stopPropagation(); maximizeWindow(id); };
+      titlebar.ondblclick=e=>{ if(e.target.closest('button'))return; maximizeWindow(id); };
       closeb.onclick=e=>{ e.stopPropagation(); closeWindow(id); };
     }
     const wrap=app.element.parentElement;
@@ -163,6 +174,54 @@
     wrap.style.display='none'; STATE.win[id].minimized=true;
     if(STATE.focused===id) STATE.focused=STATE.activeApps[0]||null;
     renderTaskbar();
+  }
+
+  // === Развернуть окно на весь десктоп (или восстановить) ===
+  // Разворачивает окно инструмента на всю область над панелью задач (класс .w420-max),
+  // предыдущая геометрия сохраняется в w.prev и восстанавливается повторным нажатием.
+  function maximizeWindow(id){
+    const app=STATE.apps[id]; if(!app||app.state==='hidden') return;
+    const w=STATE.win[id]; const wrap=app.element.parentElement;
+    if(w.maximized||fullscreen){
+      // восстановить прежние размеры
+      w.maximized=false;
+      const p=w.prev||{x:60,y:60,w:'75%',h:'auto'};
+      w.x=p.x; w.y=p.y; w.w=p.w; w.h=p.h;
+      wrap.classList.remove('w420-max');
+      wrap.style.left=w.x+'px'; wrap.style.top=w.y+'px';
+      wrap.style.width=(typeof w.w==='number')?w.w+'px':w.w;
+      wrap.style.height=(typeof w.h==='number')?w.h+'px':w.h;
+    }else{
+      w.prev={x:w.x,y:w.y,w:w.w,h:w.h};
+      w.maximized=true;
+      wrap.classList.add('w420-max');
+    }
+    focusWindow(id); renderTaskbar();
+  }
+
+  // === Resize окна курсором мыши за края/углы ===
+  function startResize(e,id,dir){
+    const app=STATE.apps[id]; if(!app) return;
+    const w=STATE.win[id]; const wrap=app.element.parentElement;
+    if(w.maximized||w.fullscreen||fullscreen) return; // в max/fullscreen размер не меняем
+    e.preventDefault(); e.stopPropagation(); focusWindow(id);
+    const startX=e.clientX, startY=e.clientY;
+    const geo=wrap.getBoundingClientRect();
+    const ox=geo.left, oy=geo.top, ow=geo.width, oh=geo.height;
+    const MIN_W=280, MIN_H=180;
+    const move=ev=>{
+      const dx=ev.clientX-startX, dy=ev.clientY-startY;
+      let nx=ox, ny=oy, nw=ow, nh=oh;
+      if(dir.includes('e')) nw=Math.max(MIN_W, ow+dx);
+      if(dir.includes('s')) nh=Math.max(MIN_H, oh+dy);
+      if(dir.includes('w')){ nw=Math.max(MIN_W, ow-dx); nx=ox+(ow-nw); }
+      if(dir.includes('n')){ nh=Math.max(MIN_H, oh-dy); ny=oy+(oh-nh); }
+      w.x=nx; w.y=ny; w.w=nw; w.h=nh;
+      wrap.style.left=nx+'px'; wrap.style.top=ny+'px';
+      wrap.style.width=nw+'px'; wrap.style.height=nh+'px';
+    };
+    const up=()=>{ document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); };
+    document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
   }
 
   // === Фокус / поднять ===
@@ -231,10 +290,12 @@
     STATE.activeMenu=menu;
   }
 
-  // === Закрыть все меню ===
+  // === Закрыть все меню (контекстные, трея и tools) ===
   function closeAllMenus(){
     Object.values(STATE.menus).forEach(m=>{ if(m) m.style.display='none'; });
+    Object.values(STATE.trays).forEach(t=>{ if(t&&t.menu) t.menu.style.display='none'; });
     STATE.menus={}; STATE.activeMenu=null;
+    const tm=$('#w420-tools-menu'); if(tm){ tm.remove(); STATE.toolsOpen=false; }
   }
 
   // === Рендер панели задач ===
@@ -285,10 +346,13 @@
       document.body.appendChild(menu); menu.style.display='none';
       STATE.trays[ti.id]={button:b,menu};
       b.onclick=e=>{
-        e.stopPropagation(); closeAllMenus();
+        e.stopPropagation();
+        const wasOpen = menu.style.display==='block';
+        closeAllMenus();
+        if(wasOpen) return; // повторное нажатие по иконке — закрыть меню (toggle)
         menu.style.display='block';
         const r=b.getBoundingClientRect();
-        menu.style.left=(r.left-170)+'px'; menu.style.top=(r.top-10-menu.offsetHeight)+'px';
+        menu.style.left=Math.max(8, r.left-170)+'px'; menu.style.top=(r.top-10-menu.offsetHeight)+'px';
         STATE.activeMenu=menu;
       };
       tray.appendChild(b);
@@ -325,9 +389,18 @@
     if(e.altKey && /\d/.test(e.key)){ const idx=parseInt(e.key)-1; if(STATE.activeApps[idx]){ focusWindow(STATE.activeApps[idx]); } }
   });
 
+  // === Потеря фокуса окна на 5 секунд — закрыть все меню (трей, контекстные, tools) ===
+  let blurTimer=null;
+  window.addEventListener('blur',()=>{
+    clearTimeout(blurTimer);
+    blurTimer=setTimeout(()=>{ closeAllMenus(); },5000);
+  });
+  window.addEventListener('focus',()=>{ clearTimeout(blurTimer); blurTimer=null; });
+  document.addEventListener('visibilitychange',()=>{ if(document.hidden){ clearTimeout(blurTimer); blurTimer=setTimeout(()=>closeAllMenus(),5000); } });
+
   // === Экспорт API ===
   window.Desktop={
-    register, openWindow, closeWindow, minimizeWindow, focusWindow, toggleFullscreen, restoreWindow,
+    register, openWindow, closeWindow, minimizeWindow, maximizeWindow, startResize, focusWindow, toggleFullscreen, restoreWindow,
     openApp, renderTaskbar, notify, apps:()=>STATE.apps, win:()=>STATE.win, state:()=>STATE
   };
 

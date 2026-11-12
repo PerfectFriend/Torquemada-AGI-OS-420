@@ -114,3 +114,22 @@
 
 /* --- адаптивность --- */
 @media (max-width: 1200px) { .w420-window { width: 100%; left: 0 !important; } }
+
+/* --- развёрнутое окно инструмента на весь десктоп (над taskbar) --- */
+.w420-max {
+  left: 0 !important; top: 0 !important;
+  width: 100% !important; height: calc(100vh - 40px) !important;
+  border-radius: 0 !important;
+}
+.w420-max .w420-rz { display: none !important; }
+
+/* --- resize-хендлы по краям и углам окна --- */
+.w420-rz { position: absolute; z-index: 60; }
+.w420-rz-n  { top: 0;    left: 10px; right: 10px; height: 7px; cursor: n-resize; }
+.w420-rz-s  { bottom: 0; left: 10px; right: 10px; height: 7px; cursor: s-resize; }
+.w420-rz-e  { right: 0;  top: 10px; bottom: 10px; width: 7px;  cursor: e-resize; }
+.w420-rz-w  { left: 0;   top: 10px; bottom: 10px; width: 7px;  cursor: w-resize; }
+.w420-rz-ne { top: 0;    right: 0;  width: 14px; height: 14px; cursor: ne-resize; }
+.w420-rz-nw { top: 0;    left: 0;   width: 14px; height: 14px; cursor: nw-resize; }
+.w420-rz-se { bottom: 0; right: 0;  width: 14px; height: 14px; cursor: se-resize; }
+.w420-rz-sw { bottom: 0; left: 0;   width: 14px; height: 14px; cursor: sw-resize; }
