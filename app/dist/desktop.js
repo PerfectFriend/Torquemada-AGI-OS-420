@@ -35,7 +35,7 @@
   function notify(tag, msg, color){
     const d=document.createElement('div');
     d.className='w420-notify';
-    d.style.cssText=`position:fixed;top:12px;right:12px;z-index:9999;background:var(--panel);border:1px solid ${color};padding:8px 12px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--ink);min-width:200px;opacity:1;transition:opacity .5s`;
+    d.style.cssText=`position:fixed;top:12px;right:12px;z-index:9999;background:var(--panel);border:1px solid ${color};padding:8px 12px;font-family:var(--fb);font-size:11px;color:var(--ink);min-width:200px;opacity:1;transition:opacity .5s`;
     d.innerHTML=`<div style="font-weight:700;color:${color}">${tag}</div><div>${msg}</div>`;
     document.body.appendChild(d);
     setTimeout(()=>{d.style.opacity=0;setTimeout(()=>d.remove(),500)},3500);
@@ -63,10 +63,10 @@
   function buildMenu(cmds){
     const menu=document.createElement('div');
     menu.className='w420-tray-menu';
-    menu.style.cssText='position:absolute;z-index:300;background:var(--head);border:1px solid var(--live);border-radius:6px;min-width:200px;padding:6px;font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--ink);box-shadow:0 0 16px var(--glow)';
+    menu.style.cssText='position:absolute;z-index:300;background:var(--head);border:1px solid var(--live);border-radius:6px;min-width:200px;padding:6px;font-family:\'var(--fb)\';font-size:11px;color:var(--ink);box-shadow:0 0 16px var(--glow)';
     cmds.forEach(c=>{
       const btn=document.createElement('button');
-      btn.style.cssText='width:100%;background:transparent;border:none;color:var(--ink);text-align:left;padding:6px 8px;font-family:\'Share Tech Mono\',monospace;font-size:11px;cursor:pointer;border-radius:4px';
+      btn.style.cssText='width:100%;background:transparent;border:none;color:var(--ink);text-align:left;padding:6px 8px;font-family:\'var(--fb)\';font-size:11px;cursor:pointer;border-radius:4px';
       btn.innerHTML=c.label+ (c.kb?` <span style="opacity:.5;font-size:9px">${c.kb}</span>`:'');
       btn.onmouseover=()=>{ btn.style.background='var(--live)'; btn.style.color='#000'; };
       btn.onmouseout=()=>{ btn.style.background='transparent'; btn.style.color='var(--ink)'; };
@@ -93,7 +93,7 @@
     app.state='open'; const w=STATE.win[id];
     if(!app.element.parentElement.classList.contains('w420-window')){
       const wrap=document.createElement('div'); wrap.className='w420-window';
-      wrap.style.cssText='position:fixed;background:var(--panel);border:1px solid var(--live);border-radius:6px;box-shadow:0 0 30px var(--glow),inset 0 0 20px var(--glow);overflow:hidden;font-family:\'Share Tech Mono\',monospace;color:var(--ink);';
+      wrap.style.cssText='position:fixed;background:var(--panel);border:1px solid var(--live);border-radius:6px;box-shadow:0 0 30px var(--glow),inset 0 0 20px var(--glow);overflow:hidden;font-family:\'var(--fb)\';color:var(--ink);';
       const titlebar=document.createElement('div');
       titlebar.className='w420-titlebar';
       titlebar.style.cssText='height:28px;background:var(--head);border-bottom:1px solid var(--live);display:flex;align-items:center;justify-content:space-between;user-select:none;padding:0 8px;cursor:default;';
@@ -302,7 +302,7 @@
   function renderTaskbar(){
     let tb=$('#w420-taskbar'); if(tb) tb.remove();
     tb=document.createElement('div'); tb.id='w420-taskbar';
-    tb.style.cssText='position:fixed;bottom:0;left:0;right:0;height:40px;background:var(--head);border-top:1px solid var(--live);display:flex;align-items:center;justify-content:space-between;padding:0 8px;z-index:900;font-family:\'Share Tech Mono\',monospace;font-size:11px;';
+    tb.style.cssText='position:fixed;bottom:0;left:0;right:0;height:40px;background:var(--head);border-top:1px solid var(--live);display:flex;align-items:center;justify-content:space-between;padding:0 8px;z-index:900;font-family:\'var(--fb)\';font-size:11px;';
     // кнопка TOOLS
     const tools=document.createElement('button');
     tools.textContent='TOOLS';
@@ -366,7 +366,7 @@
     let tm=$('#w420-tools-menu');
     if(tm){ tm.remove(); STATE.toolsOpen=false; return; }
     tm=document.createElement('div'); tm.id='w420-tools-menu';
-    tm.style.cssText='position:fixed;bottom:48px;left:10px;z-index:310;background:var(--head);border:1px solid var(--live);border-radius:8px;min-width:280px;padding:10px;font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--ink);max-height:calc(100vh - 120px);overflow:auto;';
+    tm.style.cssText='position:fixed;bottom:48px;left:10px;z-index:310;background:var(--head);border:1px solid var(--live);border-radius:8px;min-width:280px;padding:10px;font-family:\'var(--fb)\';font-size:11px;color:var(--ink);max-height:calc(100vh - 120px);overflow:auto;';
     const grid=document.createElement('div');
     grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;';
     Object.values(STATE.apps).forEach(app=>{

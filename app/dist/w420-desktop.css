@@ -6,7 +6,7 @@
 .w420-window {
   display: none;
   flex-direction: column;
-  box-shadow: 0 0 30px rgba(0,255,65,.15), inset 0 0 20px rgba(0,255,65,.05);
+  box-shadow: 0 0 30px var(--glow), inset 0 0 20px var(--glow);
   will-change: transform, opacity;
   transition: box-shadow .25s ease, transform .25s ease, opacity .2s ease;
 }
@@ -28,7 +28,7 @@
 
 /* --- панель задач --- */
 #w420-taskbar {
-  background: rgba(4,18,4,.95);
+  background: color-mix(in srgb, var(--head) 94%, transparent);
   backdrop-filter: blur(8px);
   border-top: 1px solid var(--live);
   z-index: 900;
@@ -50,7 +50,7 @@
 
 /* --- трей --- */
 #w420-tray {
-  background: rgba(4,18,4,.95);
+  background: color-mix(in srgb, var(--head) 94%, transparent);
   backdrop-filter: blur(8px);
   border-left: 1px solid var(--live);
   padding-left: 8px;
@@ -65,10 +65,10 @@
 .w420-tray-btn:hover { background: var(--live); color: #000; box-shadow: 0 0 10px var(--live); }
 
 .w420-tray-menu {
-  background: rgba(4,18,4,.95);
+  background: color-mix(in srgb, var(--head) 94%, transparent);
   border: 1px solid var(--live);
   backdrop-filter: blur(8px);
-  box-shadow: 0 4px 16px rgba(0,0,0,.5);
+  box-shadow: 0 4px 16px rgba(0,0,0,.5), 0 0 12px var(--glow);
   min-width: 200px;
 }
 .w420-tray-menu .w420-menu-item {
@@ -79,9 +79,10 @@
 
 /* --- кнопка TOOLS --- */
 #w420-tools-menu {
-  background: rgba(4,18,4,.95);
+  background: color-mix(in srgb, var(--head) 94%, transparent);
   border: 1px solid var(--live);
   backdrop-filter: blur(8px);
+  box-shadow: 0 0 16px var(--glow);
   z-index: 310;
 }
 #w420-tools-menu .w420-tools-btn {
@@ -94,10 +95,11 @@
 
 /* --- уведомления --- */
 .w420-notify {
-  background: rgba(4,18,4,.95);
+  background: color-mix(in srgb, var(--head) 94%, transparent);
   border: 1px solid var(--live);
   backdrop-filter: blur(8px);
-  color: #fff;
+  box-shadow: 0 0 16px var(--glow);
+  color: var(--ink);
 }
 
 /* --- fullscreen --- */

@@ -10,7 +10,7 @@
    Каждая тема — набор CSS-переменных на :root[data-theme="..."].
    --live/--sim/--wip — статусы, --bg/--panel/--head/--ink — фон и текст,
    --line — линии-разделители, --glow — цвет свечения. */
-:root{--live:#00ff41;--sim:#ff2244;--wip:#ffaa00;--bg:#020a02;--panel:#041204;--head:#061808;--ink:#b6ffc4;--line:#0a3a14;--glow:rgba(0,255,65,.25);--c:var(--live);color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root{--live:#00ff41;--sim:#ff2244;--wip:#ffaa00;--bg:#020a02;--panel:#041204;--head:#061808;--ink:#b6ffc4;--line:#0a3a14;--glow:rgba(0,255,65,.25);--c:var(--live);--fh:Orbitron,sans-serif;--fb:'Share Tech Mono',ui-monospace,monospace;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 :root[data-theme="dark"]{--live:#00ff41;--sim:#ff2244;--wip:#ffaa00;--bg:#020a02;--panel:#041204;--head:#061808;--ink:#b6ffc4;--line:#0a3a14;--glow:rgba(0,255,65,.25);color-scheme:dark}
 :root[data-theme="matrix"]{--live:#00ff41;--sim:#ff2244;--wip:#ffaa00;--bg:#020a02;--panel:#041204;--head:#061808;--ink:#b6ffc4;--line:#0a3a14;--glow:rgba(0,255,65,.25);color-scheme:dark}
 :root[data-theme="amber"]{--live:#ffb000;--sim:#ff2244;--wip:#ffe066;--bg:#0d0700;--panel:#140c00;--head:#1c1000;--ink:#ffd9a0;--line:#4a2e00;--glow:rgba(255,176,0,.25);color-scheme:dark}
@@ -18,13 +18,22 @@
 :root[data-theme="violet"]{--live:#b26bff;--sim:#ff2244;--wip:#ffaa00;--bg:#070310;--panel:#0e0620;--head:#150a2e;--ink:#d9c2ff;--line:#2e1a5c;--glow:rgba(178,107,255,.25);color-scheme:dark}
 :root[data-theme="red"]{--live:#ff2244;--sim:#ffffff;--wip:#ffaa00;--bg:#0d0103;--panel:#160409;--head:#220610;--ink:#ffc2cc;--line:#4a0a18;--glow:rgba(255,34,68,.3);color-scheme:dark}
 :root[data-theme="light"]{--live:#0a7a2f;--sim:#c01030;--wip:#9a6200;--bg:#eef4ee;--panel:#ffffff;--head:#e2efe2;--ink:#0d2a12;--line:#9cc79c;--glow:rgba(10,122,47,.15);color-scheme:light}
+/* КИБЕРПАНК — неоновый розовый/циан на почти чёрном, шрифты Orbitron + Share Tech Mono */
+:root[data-theme="cyberpunk"]{--live:#ff2bd6;--sim:#00f0ff;--wip:#ffe600;--bg:#0a0014;--panel:#150327;--head:#1e0536;--ink:#ffb8f0;--line:#5a1670;--glow:rgba(255,43,214,.35);--fh:Orbitron,sans-serif;--fb:'Share Tech Mono',ui-monospace,monospace;color-scheme:dark}
+:root[data-theme="cyberpunk"] body{background:radial-gradient(circle at 85% 0%,rgba(0,240,255,.12),transparent 40%),radial-gradient(circle at 0% 100%,rgba(255,43,214,.14),transparent 45%),var(--bg)}
+/* ВАН ГОГ — «Звёздная ночь»: глубокий синий, золото, рукописный Caveat */
+:root[data-theme="vangogh"]{--live:#ffd75e;--sim:#ff8c42;--wip:#7ec8ff;--bg:#101a4d;--panel:#1b2760;--head:#24327a;--ink:#f5ecd4;--line:#4d5cab;--glow:rgba(255,215,94,.4);--fh:'Caveat',cursive;--fb:'Caveat','Segoe Script',cursive;color-scheme:dark}
+:root[data-theme="vangogh"] body{font-size:16px;background:radial-gradient(circle at 78% 8%,rgba(255,215,94,.28),transparent 32%),radial-gradient(circle at 12% 85%,rgba(126,200,255,.20),transparent 38%),radial-gradient(circle at 45% 45%,rgba(27,39,96,.6),transparent 70%),var(--bg)}
+:root[data-theme="vangogh"] body::after{background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(255,215,94,.04) 3px 4px)}
+:root[data-theme="vangogh"] .w420-window{border-radius:14px}
+:root[data-theme="vangogh"] input,:root[data-theme="vangogh"] textarea,:root[data-theme="vangogh"] select{border-radius:10px 2px 10px 2px}
 html,body{height:100%;margin:0}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font:13px/1.5 'Share Tech Mono',ui-monospace,monospace;display:grid;grid-template-rows:auto 1fr;overflow:hidden}
+body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:13px;line-height:1.5;display:grid;grid-template-rows:auto 1fr;overflow:hidden}
 body::after{content:'';position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,0,0,.18) 2px 3px);z-index:9}
 :root[data-theme="light"] body::after{background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,60,0,.05) 2px 3px)}
 header{display:flex;align-items:center;gap:14px;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--head)}
-.logo{font:900 14px Orbitron,sans-serif;letter-spacing:4px;color:var(--live);text-shadow:0 0 10px var(--live)}
+.logo{font-family:var(--fh);font-weight:900;font-size:14px;letter-spacing:4px;color:var(--live);text-shadow:0 0 10px var(--live)}
 .legend{margin-left:auto;display:flex;gap:10px;font-size:11px}
 .b{display:inline-block;padding:0 6px;border:1px solid var(--c);color:var(--c);font-size:10px;letter-spacing:1px;margin-left:6px;vertical-align:middle}
 .live{--c:var(--live)}.sim{--c:var(--sim)}.wip{--c:var(--wip)}
@@ -35,12 +44,12 @@ nav button.on,nav button:hover{opacity:1;background:color-mix(in srgb,var(--c) 1
 section.view{display:none;border:1px solid var(--c);background:var(--panel);padding:12px;min-height:0;overflow:auto;flex-direction:column;gap:8px}
 section.view.on{display:flex}
 section.sim{background:#140308}
-h2{margin:0;font:700 12px Orbitron,sans-serif;letter-spacing:3px;color:var(--c);text-shadow:0 0 8px var(--c)}
+h2{margin:0;font-family:var(--fh);font-weight:700;font-size:12px;letter-spacing:3px;color:var(--c);text-shadow:0 0 8px var(--c)}
 aside{display:flex;flex-direction:column;gap:8px;overflow:auto}
 .card{border:1px solid var(--c);padding:8px;background:var(--panel)}
 .card.sim{background:#140308}
 .k{font-size:10px;letter-spacing:2px;color:var(--c);opacity:.85}
-.v{font:900 17px Orbitron,sans-serif;color:var(--c);text-shadow:0 0 8px var(--c)}
+.v{font-family:var(--fh);font-weight:900;font-size:17px;color:var(--c);text-shadow:0 0 8px var(--c)}
 input,textarea,select{background:#000;border:1px solid var(--c);color:var(--c);font:inherit;padding:6px;width:100%}
 button.a{background:transparent;border:1px solid var(--c);color:var(--c);padding:6px 12px;font:inherit;cursor:pointer;letter-spacing:1px}
 button.a:hover{background:var(--c);color:#000}
@@ -383,6 +392,8 @@ section.view::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;
         <option value="violet">Фиолет</option>
         <option value="red">Красная тревога</option>
         <option value="light">Светлая</option>
+        <option value="cyberpunk">Киберпанк (неон)</option>
+        <option value="vangogh">Ван Гог (звёздная ночь)</option>
       </select>
     </label>
     <label class="row" style="flex-direction:row;align-items:center;gap:8px">
