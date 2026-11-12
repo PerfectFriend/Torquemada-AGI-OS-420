@@ -27,12 +27,16 @@
   const styleSheet=document.createElement('style');document.head.appendChild(styleSheet);
 
   const STATE={
-    apps:{}, win:{}, topZ:100, focused:null, activeApps:[], menus:{}, trays:{}, activeMenu:null, toolsOpen:false
+    apps:{}, win:{}, topZ:100, focused:null, activeApps:[], menus:{}, trays:{}, activeMenu:null, toolsOpen:false,
+    notifs:[], iconPos:{}, showDesktop:false, launcherOpen:false, notifPanelOpen:false
   };
   let fullscreen=false;
 
-  // === Всплывающие уведомления ===
+  // === Всплывающие уведомления (+ запись в центр уведомлений) ===
   function notify(tag, msg, color){
+    STATE.notifs.push({tag, msg, ts:Date.now()});
+    if(STATE.notifs.length>50) STATE.notifs.shift();
+    updateBell();
     const d=document.createElement('div');
     d.className='w420-notify';
     d.style.cssText=`position:fixed;top:12px;right:12px;z-index:9999;background:var(--panel);border:1px solid ${color};padding:8px 12px;font-family:var(--fb);font-size:11px;color:var(--ink);min-width:200px;opacity:1;transition:opacity .5s`;
@@ -358,6 +362,22 @@
       tray.appendChild(b);
     });
     tb.appendChild(tray);
+    // A3: колокольчик центра уведомлений
+    const bell=document.createElement('button'); bell.id='w420-bell'; bell.textContent='🔔';
+    bell.style.cssText='width:30px;height:30px;background:var(--panel);border:1px solid var(--live);color:var(--ink);font-size:13px;cursor:pointer;border-radius:4px;';
+    bell.onclick=e=>{ e.stopPropagation(); toggleNotifPanel(); };
+    tray.appendChild(bell); updateBell();
+    // A2: часы (клик — календарь)
+    const clock=document.createElement('span'); clock.id='w420-clock';
+    clock.style.cssText='color:var(--ink);font-size:11px;cursor:pointer;padding:0 6px;user-select:none;';
+    clock.onclick=e=>{ e.stopPropagation(); toggleCalendar(); };
+    tray.appendChild(clock);
+    // A5: «показать десктоп» — узкая полоска на самом краю taskbar
+    const sd=document.createElement('div'); sd.id='w420-showdesk'; sd.title='Показать десктоп (Win+D)';
+    sd.style.cssText='width:7px;height:100%;border-left:1px solid var(--line);cursor:pointer;margin-left:2px;';
+    sd.onmouseover=()=>sd.style.background='var(--live)'; sd.onmouseout=()=>sd.style.background='transparent';
+    sd.onclick=()=>toggleShowDesktop();
+    tray.appendChild(sd);
     document.body.appendChild(tb);
   }
 
@@ -386,8 +406,248 @@
   // === Горячие клавиши ===
   document.addEventListener('keydown',e=>{
     if(e.altKey && e.key==='Enter'){ e.preventDefault(); toggleFullscreen(); }
+    if(e.metaKey && e.key==='d'){ e.preventDefault(); toggleShowDesktop(); }
+    if(e.metaKey && e.key==='m'){ e.preventDefault(); minimizeAll(); }
+    if((e.metaKey||e.ctrlKey) && e.key==='k'){ e.preventDefault(); STATE.launcherOpen?closeLauncher():openLauncher(); }
+    if(e.key==='Escape'){ closeLauncher(); closeNotifPanel(); closeCalendar(); closeAllMenus(); }
     if(e.altKey && /\d/.test(e.key)){ const idx=parseInt(e.key)-1; if(STATE.activeApps[idx]){ focusWindow(STATE.activeApps[idx]); } }
   });
+
+  // ================= ФАЗА A: десктоп как у настоящей ОС =================
+
+  // === A1. Иконки приложений на рабочем столе ===
+  function initDesktopIcons(){
+    let layer=$('#w420-desktop-icons'); if(layer) layer.remove();
+    try{ STATE.iconPos=JSON.parse(localStorage.getItem('w420-iconpos')||'{}'); }catch(e){}
+    layer=document.createElement('div'); layer.id='w420-desktop-icons';
+    layer.style.cssText='position:fixed;left:8px;top:56px;right:8px;bottom:48px;z-index:5;pointer-events:none;';
+    Object.values(STATE.apps).forEach(app=>{
+      if(app.aliasOf) return;
+      const ic=document.createElement('div'); ic.className='w420-dicon'; ic.dataset.app=app.id;
+      ic.style.cssText='position:absolute;width:96px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;cursor:pointer;border:1px solid transparent;border-radius:6px;text-align:center;pointer-events:auto;';
+      const pos=STATE.iconPos[app.id]||{x:8+Object.keys(STATE.iconPos).length*0, y:56+ (Object.values(STATE.apps).filter(a=>!a.aliasOf).indexOf(app))*86};
+      ic.style.left=pos.x+'px'; ic.style.top=pos.y+'px';
+      ic.innerHTML=`<span style="font-size:26px">${app.icon}</span><span style="font-size:10px;color:var(--ink);word-break:break-word">${app.label}</span>`;
+      ic.ondblclick=()=>openApp(app.id);
+      ic.onclick=e=>{ e.stopPropagation(); document.querySelectorAll('.w420-dicon.sel').forEach(x=>x.classList.remove('sel')); ic.classList.add('sel'); };
+      ic.oncontextmenu=e=>{
+        e.preventDefault(); e.stopPropagation(); closeAllMenus();
+        const items=[{label:'Открыть',action:()=>openApp(app.id)}];
+        if(app.state!=='hidden') items.push({label:'Закрыть окно',action:()=>closeWindow(app.id)});
+        items.push({label:'Переименовать…',action:()=>notify('w420','id: '+app.id,'var(--wip)')});
+        const m=buildMenu(items);
+        document.body.appendChild(m); m.style.display='block';
+        m.style.left=Math.min(e.clientX,innerWidth-230)+'px'; m.style.top=Math.min(e.clientY,innerHeight-180)+'px';
+        STATE.menus['icon-'+app.id]=m; STATE.activeMenu=m;
+      };
+      // drag иконки по десктопу (позиция сохраняется)
+      ic.onmousedown=e=>{
+        if(e.button!==0||e.detail>1) return;
+        e.preventDefault();
+        const sx=e.clientX-ic.offsetLeft, sy=e.clientY-ic.offsetTop;
+        const mv=ev=>{ ic.style.left=(ev.clientX-sx)+'px'; ic.style.top=(ev.clientY-sy)+'px'; };
+        const up=ev=>{
+          document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up);
+          STATE.iconPos[app.id]={x:ev.clientX-sx, y:ev.clientY-sy};
+          try{ localStorage.setItem('w420-iconpos', JSON.stringify(STATE.iconPos)); }catch(err){}
+        };
+        document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up);
+      };
+      layer.appendChild(ic);
+    });
+    document.body.appendChild(layer);
+  }
+
+  // === ПКМ по пустому десктопу: контекстное меню рабочего стола ===
+  document.addEventListener('contextmenu',e=>{
+    if(e.target.closest('.w420-window,#w420-taskbar,.w420-tray-menu,#w420-tools-menu,.w420-dicon,#w420-launcher,.w420-panel')) return;
+    e.preventDefault(); closeAllMenus();
+    const m=buildMenu([
+      {label:'Показать десктоп (Win+D)',action:()=>toggleShowDesktop()},
+      {label:'Свернуть все окна (Win+M)',action:()=>minimizeAll()},
+      {label:'Каскад окон',action:()=>cascadeWindows()},
+      {label:'Плитка сеткой',action:()=>tileWindows('grid')},
+      {label:'Рядами по горизонтали',action:()=>tileWindows('h')},
+      {label:'Поиск приложений (Win+K)',action:()=>openLauncher()},
+      {label:'Центр уведомлений',action:()=>toggleNotifPanel()}
+    ]);
+    document.body.appendChild(m); m.style.display='block';
+    m.style.left=Math.min(e.clientX,innerWidth-240)+'px'; m.style.top=Math.min(e.clientY,innerHeight-240)+'px';
+    STATE.menus['desktop']=m; STATE.activeMenu=m;
+  });
+
+  // === A5. «Показать десктоп» (Win+D): сворачивает все окна, повтор — восстанавливает ===
+  function toggleShowDesktop(){
+    if(STATE.showDesktop){
+      STATE.showDesktop=false;
+      STATE.activeApps.forEach(id=>{
+        const app=STATE.apps[id]; if(!app) return;
+        const w=STATE.win[id];
+        if(w.minimized){ w.minimized=false; app.state='open';
+          const wrap=app.element.parentElement; wrap.style.display='flex'; app.element.style.display='flex'; }
+      });
+      notify('w420','окна восстановлены','var(--live)');
+    }else{
+      STATE.showDesktop=true;
+      STATE.activeApps.slice().forEach(id=>minimizeWindow(id));
+      notify('w420','показан рабочий стол','var(--wip)');
+    }
+    renderTaskbar();
+  }
+
+  // === A6. Свернуть все (Win+M) ===
+  function minimizeAll(){
+    STATE.showDesktop=false;
+    STATE.activeApps.slice().forEach(id=>minimizeWindow(id));
+    notify('w420','все окна свёрнуты','var(--wip)');
+  }
+
+  // === A6. Каскад / плитка окон ===
+  function _unhide(id){
+    const app=STATE.apps[id]; const w=STATE.win[id]; const wrap=app.element.parentElement;
+    if(w.minimized){ w.minimized=false; app.state='open'; wrap.style.display='flex'; app.element.style.display='flex'; }
+    w.maximized=false; wrap.classList.remove('w420-max');
+  }
+  function cascadeWindows(){
+    const ids=STATE.activeApps; if(!ids.length) return;
+    ids.forEach((id,i)=>{
+      _unhide(id);
+      const w=STATE.win[id], wrap=STATE.apps[id].element.parentElement;
+      w.x=90+i*32; w.y=64+i*32; w.w=Math.min(720,innerWidth-200); w.h=Math.min(520,innerHeight-180);
+      wrap.style.left=w.x+'px'; wrap.style.top=w.y+'px'; wrap.style.width=w.w+'px'; wrap.style.height=w.h+'px';
+    });
+    renderTaskbar(); notify('w420','каскад: '+ids.length+' окн.','var(--live)');
+  }
+  function tileWindows(orient){
+    const ids=STATE.activeApps; const n=ids.length; if(!n) return;
+    const H=innerHeight-40;
+    ids.forEach((id,i)=>{
+      _unhide(id);
+      const w=STATE.win[id], wrap=STATE.apps[id].element.parentElement;
+      let g;
+      if(orient==='h'){ g={x:0, y:Math.floor(H*i/n), w:innerWidth, h:Math.floor(H/n)}; }
+      else { const cols=Math.ceil(Math.sqrt(n)), rows=Math.ceil(n/cols), c=i%cols, r=Math.floor(i/cols);
+        g={x:Math.floor(innerWidth*c/cols), y:Math.floor(H*r/rows), w:Math.floor(innerWidth/cols), h:Math.floor(H/rows)}; }
+      w.x=g.x; w.y=g.y; w.w=g.w; w.h=g.h;
+      wrap.style.left=g.x+'px'; wrap.style.top=g.y+'px'; wrap.style.width=g.w+'px'; wrap.style.height=g.h+'px';
+    });
+    renderTaskbar(); notify('w420','плитка: '+n+' окн.','var(--live)');
+  }
+
+  // === A3. Центр уведомлений: колокольчик в трее + панель ===
+  function updateBell(){
+    const b=$('#w420-bell'); if(!b) return;
+    const n=STATE.notifs.length;
+    b.textContent = n>0 ? '🔔 '+n : '🔔';
+    b.style.borderColor = n>0 ? '#ff4444' : 'var(--live)';
+  }
+  function toggleNotifPanel(){
+    const old=$('#w420-notif-panel'); if(old){ old.remove(); STATE.notifPanelOpen=false; return; }
+    closeAllMenus();
+    const p=document.createElement('div'); p.id='w420-notif-panel'; p.className='w420-panel';
+    const h=document.createElement('h3');
+    h.innerHTML=`<span>УВЕДОМЛЕНИЯ</span><button class="a" style="padding:2px 8px;font-size:10px" id="w420-notif-clear">очистить</button>`;
+    p.appendChild(h);
+    const list=document.createElement('div');
+    if(!STATE.notifs.length){ list.innerHTML='<div style="opacity:.5;padding:8px">Пока пусто</div>'; }
+    STATE.notifs.slice().reverse().forEach(n=>{
+      const d=new Date(n.ts);
+      const it=document.createElement('div'); it.className='w420-notif-item';
+      it.innerHTML=`<div class="t">${d.toLocaleTimeString('ru-RU')} · ${n.tag}</div><div>${n.msg}</div>`;
+      list.appendChild(it);
+    });
+    p.appendChild(list);
+    document.body.appendChild(p);
+    STATE.notifPanelOpen=true;
+    h.querySelector('#w420-notif-clear').onclick=e=>{ e.stopPropagation(); STATE.notifs=[]; updateBell(); toggleNotifPanel(); toggleNotifPanel(); };
+  }
+  function closeNotifPanel(){ const p=$('#w420-notif-panel'); if(p) p.remove(); STATE.notifPanelOpen=false; }
+
+  // === A2. Часы в трее + календарь по клику ===
+  function startClock(){
+    const tick=()=>{
+      const c=$('#w420-clock'); if(!c) return;
+      const d=new Date();
+      c.textContent=d.toLocaleTimeString('ru-RU');
+      c.title=d.toLocaleDateString('ru-RU',{weekday:'long', day:'numeric', month:'long', year:'numeric'});
+    };
+    tick(); setInterval(tick,1000);
+  }
+  let calCursor=null;
+  function toggleCalendar(){
+    const old=$('#w420-cal'); if(old){ old.remove(); return; }
+    closeAllMenus();
+    if(!calCursor){ const d=new Date(); calCursor=new Date(d.getFullYear(),d.getMonth(),1); }
+    const p=document.createElement('div'); p.id='w420-cal'; p.className='w420-panel'; p.style.width='250px';
+    const render=()=>{
+      p.innerHTML='';
+      const y=calCursor.getFullYear(), m=calCursor.getMonth();
+      const h=document.createElement('h3');
+      h.innerHTML=`<button class="a" id="cal-prev" style="padding:0 8px">‹</button><span>${calCursor.toLocaleDateString('ru-RU',{month:'long', year:'numeric'})}</span><button class="a" id="cal-next" style="padding:0 8px">›</button>`;
+      p.appendChild(h);
+      const grid=document.createElement('div'); grid.className='w420-cal-grid';
+      ['пн','вт','ср','чт','пт','сб','вс'].forEach(d=>{ const c=document.createElement('div'); c.className='dow'; c.textContent=d; grid.appendChild(c); });
+      const first=new Date(y,m,1); const startDow=(first.getDay()+6)%7; // пн=0
+      const days=new Date(y,m+1,0).getDate();
+      const today=new Date();
+      for(let i=0;i<startDow;i++){ grid.appendChild(document.createElement('div')); }
+      for(let d=1;d<=days;d++){
+        const c=document.createElement('div'); c.className='day'+(d===today.getDate()&&m===today.getMonth()&&y===today.getFullYear()?' today':'');
+        c.textContent=d;
+        c.onclick=()=>{ notify('дата', `${d}.${m+1}.${y}`, 'var(--live)'); toggleCalendar(); };
+        grid.appendChild(c);
+      }
+      p.appendChild(grid);
+      h.querySelector('#cal-prev').onclick=()=>{ calCursor=new Date(y,m-1,1); render(); };
+      h.querySelector('#cal-next').onclick=()=>{ calCursor=new Date(y,m+1,1); render(); };
+    };
+    render();
+    document.body.appendChild(p);
+  }
+  function closeCalendar(){ const p=$('#w420-cal'); if(p) p.remove(); }
+
+  // === A4. Глобальный поиск/launcher (Win+K / Ctrl+K) ===
+  function openLauncher(){
+    if(STATE.launcherOpen) return; STATE.launcherOpen=true; closeAllMenus();
+    const ov=document.createElement('div'); ov.id='w420-launcher';
+    ov.style.cssText='position:fixed;inset:0;z-index:950;background:rgba(0,0,0,.55);display:flex;justify-content:center;';
+    const box=document.createElement('div');
+    box.style.cssText='margin-top:12vh;width:min(560px,90vw);height:fit-content;background:color-mix(in srgb,var(--head) 97%,transparent);border:1px solid var(--live);border-radius:10px;box-shadow:0 0 30px var(--glow);padding:10px;backdrop-filter:blur(8px);';
+    const inp=document.createElement('input');
+    inp.placeholder='Поиск приложений и команд… (Esc — закрыть)';
+    inp.style.cssText='width:100%;margin-bottom:8px;';
+    const list=document.createElement('div'); list.style.cssText='max-height:50vh;overflow:auto;display:flex;flex-direction:column;gap:2px;';
+    const items=[];
+    Object.values(STATE.apps).forEach(a=>{ if(a.aliasOf) return; items.push({label:a.label, icon:a.icon, id:a.id, run:()=>openApp(a.id)}); });
+    items.push({label:'Полный экран (Alt+Enter)', icon:'🖥️', run:()=>toggleFullscreen()});
+    items.push({label:'Показать десктоп (Win+D)', icon:'🗔', run:()=>toggleShowDesktop()});
+    items.push({label:'Свернуть все окна (Win+M)', icon:'🗕', run:()=>minimizeAll()});
+    items.push({label:'Каскад окон', icon:'🪟', run:()=>cascadeWindows()});
+    items.push({label:'Центр уведомлений', icon:'🔔', run:()=>toggleNotifPanel()});
+    const renderList=q=>{
+      list.innerHTML='';
+      items.filter(i=>i.label.toLowerCase().includes(q.toLowerCase())||((i.id||'').toLowerCase().includes(q.toLowerCase()))).forEach(i=>{
+        const b=document.createElement('button');
+        b.style.cssText='display:flex;gap:8px;align-items:center;background:transparent;border:none;color:var(--ink);padding:6px 8px;cursor:pointer;font:inherit;text-align:left;border-radius:4px;';
+        b.innerHTML=`<span>${i.icon||'▸'}</span><span>${i.label}</span>`;
+        b.onmouseover=()=>{ b.style.background='var(--live)'; b.style.color='#000'; };
+        b.onmouseout=()=>{ b.style.background='transparent'; b.style.color='var(--ink)'; };
+        b.onclick=()=>{ closeLauncher(); i.run(); };
+        list.appendChild(b);
+      });
+      if(!list.children.length) list.innerHTML='<div style="opacity:.5;padding:8px">Ничего не найдено</div>';
+    };
+    inp.oninput=()=>renderList(inp.value);
+    inp.onkeydown=e=>{
+      if(e.key==='Enter'){ const f=list.querySelector('button'); if(f) f.click(); }
+      if(e.key==='Escape'){ closeLauncher(); }
+      e.stopPropagation();
+    };
+    box.appendChild(inp); box.appendChild(list); ov.appendChild(box); document.body.appendChild(ov);
+    renderList(''); setTimeout(()=>inp.focus(),50);
+    ov.onmousedown=e=>{ if(e.target===ov) closeLauncher(); };
+  }
+  function closeLauncher(){ const l=$('#w420-launcher'); if(l) l.remove(); STATE.launcherOpen=false; }
 
   // === Потеря фокуса окна на 5 секунд — закрыть все меню (трей, контекстные, tools) ===
   let blurTimer=null;
@@ -401,13 +661,16 @@
   // === Экспорт API ===
   window.Desktop={
     register, openWindow, closeWindow, minimizeWindow, maximizeWindow, startResize, focusWindow, toggleFullscreen, restoreWindow,
-    openApp, renderTaskbar, notify, apps:()=>STATE.apps, win:()=>STATE.win, state:()=>STATE
+    openApp, renderTaskbar, notify, apps:()=>STATE.apps, win:()=>STATE.win, state:()=>STATE,
+    initDesktopIcons, toggleShowDesktop, minimizeAll, cascadeWindows, tileWindows,
+    openLauncher, closeLauncher, toggleNotifPanel, toggleCalendar, startClock
   };
 
   // === Инициализация (регистрация 10 базовых приложений) ===
   document.addEventListener('DOMContentLoaded',()=>{
-    document.addEventListener('click',e=>{ if(e.target.closest('[id="w420-tools-menu"]') || e.target.closest('[id="w420-taskbar"]')) return; closeAllMenus(); });
+    document.addEventListener('click',e=>{ if(e.target.closest('[id="w420-tools-menu"]') || e.target.closest('[id="w420-taskbar"]')) return; closeAllMenus(); if(!e.target.closest('.w420-panel')){ closeNotifPanel(); closeCalendar(); } });
     renderTaskbar();
+    startClock();
     // 10 окон по реальным секциям index.html
     register('term',{icon:'\ud83d\udda5\ufe0f',label:'Terminal',section:'#v-term',basicMenu:{cmds:[{label:'Clear output',action:()=>{const o=$('#out');if(o)o.textContent=''}}]}});
     register('vault',{icon:'\ud83d\udd10',label:'QFS Vault',section:'#v-vault',basicMenu:{cmds:[{label:'Encrypt + save',cmd:'vault'}]}});
@@ -425,6 +688,7 @@
     register('siem',deep('SIEM','#siem-out','\ud83d\udd14'));
     register('health',deep('Health','#hl-out','\ud83e\ude7a'));
     register('settings',{icon:'\u2699\ufe0f',label:'Settings',section:'#spanel',basicMenu:{cmds:[{label:'Close',action:()=>{const s=$('#spanel');if(s)s.hidden=true}}]}});
+    initDesktopIcons(); // после регистрации всех приложений
     setTimeout(()=>{ window.Desktop.openWindow('term'); }, 300);
   });
 

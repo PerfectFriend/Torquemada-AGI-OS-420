@@ -135,3 +135,29 @@
 .w420-rz-nw { top: 0;    left: 0;   width: 14px; height: 14px; cursor: nw-resize; }
 .w420-rz-se { bottom: 0; right: 0;  width: 14px; height: 14px; cursor: se-resize; }
 .w420-rz-sw { bottom: 0; left: 0;   width: 14px; height: 14px; cursor: sw-resize; }
+
+/* --- A1: иконки рабочего стола --- */
+.w420-dicon:hover { background: color-mix(in srgb, var(--live) 12%, transparent); border-color: var(--line); }
+.w420-dicon.sel { border-color: var(--live) !important; background: color-mix(in srgb, var(--live) 18%, transparent); }
+
+/* --- A2/A3: панели (уведомления, календарь) --- */
+.w420-panel {
+  position: fixed; right: 10px; bottom: 48px; width: 320px; max-height: 55vh; overflow: auto;
+  background: color-mix(in srgb, var(--head) 96%, transparent);
+  border: 1px solid var(--live); border-radius: 8px;
+  box-shadow: 0 0 20px var(--glow); z-index: 940; padding: 8px;
+  font-family: var(--fb); font-size: 11px; color: var(--ink);
+  backdrop-filter: blur(8px);
+}
+.w420-panel h3 {
+  margin: 0 0 6px; font-family: var(--fh); font-weight: 700; font-size: 12px;
+  color: var(--live); letter-spacing: 2px; display: flex; justify-content: space-between; align-items: center;
+}
+.w420-notif-item { border-bottom: 1px solid var(--line); padding: 5px 2px; }
+.w420-notif-item .t { opacity: .55; font-size: 9px; }
+#w420-clock:hover { color: var(--live); }
+.w420-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
+.w420-cal-grid .dow { opacity: .5; font-size: 9px; }
+.w420-cal-grid .day { padding: 3px 0; border-radius: 3px; cursor: pointer; }
+.w420-cal-grid .day:hover { background: var(--live); color: #000; }
+.w420-cal-grid .today { outline: 1px solid var(--live); }
