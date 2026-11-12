@@ -12,6 +12,9 @@
 }
 .w420-window.w420-anim { transform: scale(1.02); opacity: 1; }
 .w420-window.w420-min { transform: scale(.85); opacity: .35; }
+/* E2: анимации открытия/закрытия окна (классы вешает desktop.js) */
+.w420-window.w420-opening { transform: scale(.96); opacity: 0; }
+.w420-window.w420-closing { transform: scale(.9); opacity: 0; }
 
 .w420-titlebar {
   cursor: move;

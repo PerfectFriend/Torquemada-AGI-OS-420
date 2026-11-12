@@ -142,6 +142,9 @@
     wrap.style.left=(w.x||60)+'px'; wrap.style.top=(w.y||60)+'px';
     wrap.style.width=(w.w||'75%')+'px'; wrap.style.height=(w.h||'auto')+'px';
     wrap.style.display='flex'; wrap.style.flexDirection='column';
+    // E2: анимация открытия (scale .96→1, fade in) — двумя кадрами, иначе transition не сработает
+    wrap.classList.add('w420-opening');
+    requestAnimationFrame(()=>requestAnimationFrame(()=>wrap.classList.remove('w420-opening')));
     wrap.style.zIndex=STATE.topZ++; STATE.win[id].z=STATE.topZ;
     STATE.activeApps.unshift(id); STATE.focused=id;
     w.minimized=false; w.fullscreen=false; w.maximized=false;
@@ -183,7 +186,11 @@
     const wrap=app.element.parentElement;
     // ВАЖНО: обёртку НЕ удаляем — секция должна остаться в DOM, чтобы окно можно было открыть снова.
     // Закрытие = скрыть окно и остановить работу модуля (onClose выше); секция остаётся в wrap.
-    if(wrap.classList.contains('w420-window')){ wrap.style.display='none'; app.element.style.display='none'; app.element.style.flexDirection=''; }
+    // E2: анимация закрытия (scale→.9, fade out) перед скрытием
+    if(wrap.classList.contains('w420-window')){
+      wrap.classList.add('w420-closing');
+      setTimeout(()=>{ wrap.classList.remove('w420-closing'); wrap.style.display='none'; app.element.style.display='none'; app.element.style.flexDirection=''; },170);
+    }
     else{ app.element.style.display='none'; app.element.style.flexDirection=''; }
     app.state='hidden';
     STATE.activeApps=STATE.activeApps.filter(a=>a!==id);
@@ -452,6 +459,18 @@
       grid.appendChild(b);
     });
     tm.appendChild(grid); document.body.appendChild(tm); STATE.toolsOpen=true;
+    // E3: подсказки горячих клавиш внизу TOOLS-меню
+    const hk=document.createElement('div');
+    hk.style.cssText='margin-top:10px;padding-top:8px;border-top:1px solid var(--line);font-size:9px;opacity:.75;line-height:1.7;';
+    hk.innerHTML=`<b style="color:var(--live)">ГОРЯЧИЕ КЛАВИШИ</b><br>
+      Win+D — показать десктоп · Win+M — свернуть все · Win+K — поиск приложений<br>
+      Win+Tab — task view · Alt+Tab — переключатель окон · Alt+Enter — fullscreen всего приложения<br>
+      Win+← → ↑ ↓ — snap окна · Win+Ctrl+D — новый рабочий стол · Win+Ctrl+←/→ — столы · Win+Ctrl+W — закрыть стол<br>
+      ПКМ по окну/десктопу — контекстное меню · дв. клик по иконке — открыть · перетяни файл на иконку — отправить`;
+    tm.appendChild(hk);
+    const tut=document.createElement('button'); tut.className='a'; tut.style.cssText='margin-top:8px;width:100%';
+    tut.textContent='❓ Показать обучение снова'; tut.onclick=()=>{ toggleToolsMenu(); showTutorial(true); };
+    tm.appendChild(tut);
     const outside=()=>{ if(STATE.toolsOpen){ toggleToolsMenu(); document.removeEventListener('click',outside); } };
     setTimeout(()=>document.addEventListener('click',outside),10);
   }
@@ -1032,8 +1051,31 @@
     snapAt, snapFocused, showPreview, hidePreview, openTaskView, closeTaskView, shadeWindow, openWindowMenu, saveLayout, loadLayout,
     visibleApps, switchWs, newWs, closeWs, moveWindowToWs,
     WALLPAPERS, applyWallpaper, wallpaperMenu, themeMenu,
-    startSysmon, sysmonText
+    startSysmon, sysmonText,
+    showTutorial
   };
+
+  // === E4. Туториал при первом старте ===
+  function showTutorial(force){
+    if(!force && localStorage.getItem('w420-seen-tutorial')) return;
+    try{ localStorage.setItem('w420-seen-tutorial','1'); }catch(e){}
+    const ov=document.createElement('div'); ov.id='w420-tutorial';
+    ov.style.cssText='position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;font-family:var(--fb);';
+    const card=document.createElement('div');
+    card.style.cssText='max-width:560px;background:var(--head);border:1px solid var(--live);border-radius:10px;padding:22px;box-shadow:0 0 40px var(--glow);color:var(--ink);font-size:12px;line-height:1.8;';
+    card.innerHTML=`<h2 style="color:var(--live);margin:0 0 10px;font-family:var(--fh)">W420 — десктопный режим</h2>
+      🖱 <b>Двойной клик</b> по иконке слева открывает модуль. Иконки можно <b>перетаскивать</b>.<br>
+      🪟 Окна: <b>drag за заголовок</b>, у края — <b>прилипание (snap)</b>, <b>resize за угол</b>, кнопки свернуть/развернуть/закрыть.<br>
+      ⌨ <b>Win+D</b> показать десктоп · <b>Win+M</b> свернуть все · <b>Win+K</b> поиск · <b>Win+Tab</b> все окна · <b>Alt+Tab</b> переключение.<br>
+      🖥 <b>Win+Ctrl+D</b> новый рабочий стол, <b>Win+Ctrl+←/→</b> переключение (пейджер в панели задач).<br>
+      🖼 ПКМ по десктопу: <b>обои, тема, расположение окон</b>. Перетащите <b>файл на иконку</b> — он уйдёт в приложение.<br>
+      🔔 Правый нижний угол: монитор CPU/RAM, уведомления, часы. <b>Alt+Enter</b> — fullscreen без рамок.<br>
+      🎨 8 тем и 3 языка — в ⚙ Settings или через ПКМ десктопа → Тема.`;
+    const b=document.createElement('button'); b.className='a'; b.style.cssText='margin-top:14px;padding:8px 18px;font-size:12px';
+    b.textContent='Понятно, начинаем'; b.onclick=()=>ov.remove();
+    card.appendChild(b); ov.appendChild(card); document.body.appendChild(ov);
+    ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+  }
 
   // === Инициализация (регистрация 10 базовых приложений) ===
   document.addEventListener('DOMContentLoaded',()=>{
@@ -1061,6 +1103,7 @@
     { const L=loadLayout(); if(L&&L.wsCount>1){ STATE.ws=Array.from({length:L.wsCount},()=>[]); STATE.wsIndex=Math.min(L.wsIndex||0,L.wsCount-1); renderTaskbar(); } }
     applyWallpaper(); // C1: обои при старте (свой выбор или дефолт темы)
     startSysmon(); // D1: инлайн-монитор в трее
+    showTutorial(false); // E4: туториал при первом старте
     setTimeout(()=>{ window.Desktop.openWindow('term'); }, 300);
   });
 
