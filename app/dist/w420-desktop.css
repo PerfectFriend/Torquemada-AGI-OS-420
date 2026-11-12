@@ -101,7 +101,9 @@
 }
 
 /* --- fullscreen --- */
+/* --- fullscreen: всё приложение на весь экран, taskbar/tray/TOOLS остаются видимыми --- */
 .w420-full #main { padding-bottom: 40px; }
+.w420-full #w420-taskbar { display: flex !important; }
 .w420-fs {
   top: 0 !important; left: 0 !important;
   width: 100vw !important; height: 100vh !important;
@@ -109,7 +111,6 @@
   border: none !important; box-shadow: none !important;
 }
 .w420-fs .w420-titlebar { display: none !important; }
-.w420-full #w420-taskbar { display: none !important; }
 
 /* --- адаптивность --- */
 @media (max-width: 1200px) { .w420-window { width: 100%; left: 0 !important; } }

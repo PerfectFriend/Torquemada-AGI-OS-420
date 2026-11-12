@@ -176,36 +176,27 @@
     renderTaskbar();
   }
 
-  // === Полноэкранный режим (Alt+Enter) ===
+  // === Полноэкранный режим всего приложения (Alt+Enter) ===
+  // Разворачивает САМ ДЕСКТОП приложения во весь экран (нативное окно Tauri setFullscreen,
+  // в браузере — requestFullscreen всего документа). Панель задач, трей и кнопка TOOLS
+  // при этом остаются на месте и занимают весь экран — fullscreen относится к приложению, а не к одному окну.
   async function toggleFullscreen(){
-    if(!STATE.focused) return; const app=STATE.apps[STATE.focused], w=STATE.win[STATE.focused];
-    if(!app) return;
     if(fullscreen){
-      if(document.exitFullscreen){ try{await document.exitFullscreen();}catch(e){} }
-      fullscreen=false; w.fullscreen=false; w.maximized=false;
-      const wrap=app.element.parentElement;
-      wrap.classList.remove('w420-fs');
+      // выход: сворачиваем всё приложение из fullscreen
+      if(NATIVE){
+        try{ await window.__TAURI__.window.getCurrentWindow().setFullscreen(false); }catch(e){}
+      } else if(document.exitFullscreen){ try{ await document.exitFullscreen(); }catch(e){} }
+      fullscreen=false;
       document.body.classList.remove('w420-full');
-      document.body.style.paddingBottom='';
-      // восстанавливаем размеры и заголовок окна
-      const titlebar=wrap.querySelector('.w420-titlebar'); if(titlebar) titlebar.style.display='flex';
-      wrap.style.top=(w.y||60)+'px'; wrap.style.left=(w.x||60)+'px';
-      wrap.style.width=(w.w||Math.round(window.innerWidth*0.72))+'px';
-      wrap.style.height=(w.h||Math.round(window.innerHeight*0.7))+'px';
-      wrap.style.zIndex=STATE.topZ++; w.z=STATE.topZ;
-      renderTaskbar(); notify('w420','exited fullscreen','var(--wip)');
+      renderTaskbar(); notify('w420','fullscreen OFF — десктоп приложения','var(--wip)');
     }else{
-      if(w.maximized){ restoreWindow(STATE.focused); }
-      const wrap=app.element.parentElement;
-      const titlebar=wrap.querySelector('.w420-titlebar'); if(titlebar) titlebar.style.display='none';
-      wrap.style.top='0'; wrap.style.left='0'; wrap.style.width='100vw'; wrap.style.height='100vh';
-      wrap.style.zIndex=250; w.z=250; STATE.topZ=250;
-      wrap.classList.add('w420-fs');
+      // вход: всё приложение на весь экран, taskbar/tray остаются видимыми
+      if(NATIVE){
+        try{ await window.__TAURI__.window.getCurrentWindow().setFullscreen(true); }catch(e){}
+      } else if(document.documentElement.requestFullscreen){ try{ await document.documentElement.requestFullscreen(); }catch(e){} }
+      fullscreen=true;
       document.body.classList.add('w420-full');
-      document.body.style.paddingBottom='40px';
-      if(document.documentElement.requestFullscreen){ try{ await document.documentElement.requestFullscreen(); }catch(e){} }
-      fullscreen=true; w.fullscreen=true; w.maximized=false;
-      renderTaskbar(); notify('w420','FULL SCREEN ON','var(--live)');
+      renderTaskbar(); notify('w420','FULL SCREEN — весь десктоп приложения','var(--live)');
     }
   }
 
