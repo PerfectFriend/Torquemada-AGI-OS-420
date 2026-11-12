@@ -126,6 +126,8 @@
   function applyTheme(theme) {
     if (theme === 'dark') theme = 'matrix';
     document.documentElement.setAttribute('data-theme', theme || 'matrix');
+    // C1: если обои не выбраны вручную — подхватить дефолт новой темы
+    try { if ((localStorage.getItem('w420-wallpaper') || 'theme') === 'theme' && window.Desktop && Desktop.applyWallpaper) Desktop.applyWallpaper('theme'); } catch (e) {}
   }
 
   // --- применение настроек к живым контролам ---

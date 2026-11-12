@@ -57,7 +57,7 @@
     if(!el){ notify('w420','section not found: '+id,'var(--sim)'); return; }
     el.style.position='relative'; el.style.overflow='hidden'; el.style.height='100%';
     STATE.apps[id]={id,icon:cfg.icon||'\ud83d\udcc1',label:cfg.label||id,section:el,onOpen:cfg.onOpen,onClose:cfg.onClose,
-      onBeforeClose:cfg.onBeforeClose,element:el,state:'hidden'};
+      onBeforeClose:cfg.onBeforeClose, onDropFiles:cfg.onDropFiles, element:el, state:'hidden'};
     STATE.win[id]={x:60,y:60,w:Math.min(el.clientWidth||700, Math.round(window.innerWidth*0.72)),h:Math.min(el.clientHeight||500, Math.round(window.innerHeight*0.7)),minimized:false,
       fullscreen:false,maximized:false,z:100,appIcon:null,menu:null,ws:STATE.wsIndex};
     if(cfg.basicMenu){ STATE.win[id].menu=buildMenu(cfg.basicMenu); STATE.win[id].menuCmds=cfg.basicMenu.cmds; }
@@ -459,6 +459,55 @@
   // ================= ФАЗА A: десктоп как у настоящей ОС =================
 
   // === A1. Иконки приложений на рабочем столе ===
+  // === C1. Обои рабочего стола ===
+  // Предустановки — только CSS-градиенты/паттерны на переменных темы, без хардкода цветов.
+  const WALLPAPERS=[
+    {id:'theme',   label:'По умолчанию (под тему)'},
+    {id:'void',    label:'Бездна (чистый фон темы)'},
+    {id:'grid',    label:'Сетка',            css:'linear-gradient(var(--glow) 1px,transparent 1px),linear-gradient(90deg,var(--glow) 1px,transparent 1px)', size:'34px 34px'},
+    {id:'scan',    label:'Сканлайны',        css:'repeating-linear-gradient(0deg,transparent 0 2px,var(--glow) 2px 3px)'},
+    {id:'radial',  label:'Свечение из центра', css:'radial-gradient(ellipse at 50% 40%,var(--glow) 0%,transparent 55%)'},
+    {id:'diag',    label:'Диагонали',        css:'repeating-linear-gradient(45deg,transparent 0 14px,var(--glow) 14px 15px)'},
+    {id:'stars',   label:'Точки',            css:'radial-gradient(var(--live) 1px,transparent 1px)', size:'26px 26px'},
+    {id:'vignette',label:'Виньетка',         css:'radial-gradient(ellipse at center,transparent 45%,var(--head) 100%)'}
+  ];
+  const THEME_WALL={matrix:'grid',amber:'scan',cyan:'radial',violet:'stars',red:'vignette',light:'diag',cyberpunk:'diag',vangogh:'radial'};
+  function applyWallpaper(id){
+    const saved=id||localStorage.getItem('w420-wallpaper')||'theme';
+    if(saved.startsWith('url:')){ document.body.style.background=`url("${saved.slice(4)}") center/cover no-repeat, var(--bg)`; document.body.style.backgroundSize='cover'; }
+    else{
+      let w=WALLPAPERS.find(x=>x.id===saved);
+      if(!w||saved==='theme'){ const t=(document.documentElement.getAttribute('data-theme')||'matrix'); const wid=THEME_WALL[t]||'grid'; w=WALLPAPERS.find(x=>x.id===wid)||WALLPAPERS[2]; }
+      document.body.style.backgroundColor='var(--bg)';
+      if(w.id==='void'){ document.body.style.background='var(--bg)'; }
+      else{ document.body.style.background=`${w.css}, var(--bg)`; document.body.style.backgroundSize=w.size||'auto'; }
+    }
+    if(id){ try{ localStorage.setItem('w420-wallpaper', id); }catch(e){} }
+  }
+  function wallpaperMenu(x,y){
+    closeAllMenus();
+    const items=WALLPAPERS.map(w=>({label:(localStorage.getItem('w420-wallpaper')||'theme')===w.id?'● '+w.label:'○ '+w.label, action:()=>applyWallpaper(w.id)}));
+    items.push({label:'🖼 Свой URL изображения…', action:()=>{ const u=prompt('URL изображения для обоев:'); if(u) applyWallpaper('url:'+u); }});
+    const m=buildMenu(items);
+    document.body.appendChild(m); m.style.display='block';
+    m.style.left=Math.min(x,innerWidth-260)+'px'; m.style.top=Math.min(y,innerHeight-320)+'px';
+    STATE.menus['wallpaper']=m; STATE.activeMenu=m;
+  }
+  function themeMenu(x,y){
+    closeAllMenus();
+    const themes=['matrix','amber','cyan','violet','red','light','cyberpunk','vangogh'];
+    const m=buildMenu(themes.map(t=>({label:(document.documentElement.getAttribute('data-theme')===t?'● ':'○ ')+t, action:()=>{
+      document.documentElement.setAttribute('data-theme',t);
+      try{ localStorage.setItem('w420-theme',t); }catch(e){}
+      if(window.I18N&&window.I18N.saveSettings) window.I18N.saveSettings({theme:t});
+      if(!localStorage.getItem('w420-wallpaper')||localStorage.getItem('w420-wallpaper')==='theme') applyWallpaper('theme');
+      notify('w420','тема: '+t,'var(--live)');
+    }})));
+    document.body.appendChild(m); m.style.display='block';
+    m.style.left=Math.min(x,innerWidth-220)+'px'; m.style.top=Math.min(y,innerHeight-300)+'px';
+    STATE.menus['theme']=m; STATE.activeMenu=m;
+  }
+
   function initDesktopIcons(){
     let layer=$('#w420-desktop-icons'); if(layer) layer.remove();
     try{ STATE.iconPos=JSON.parse(localStorage.getItem('w420-iconpos')||'{}'); }catch(e){}
@@ -496,6 +545,21 @@
         };
         document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up);
       };
+      // C3: drag&drop файлов на иконку приложения
+      ic.ondragover=e=>{ e.preventDefault(); e.dataTransfer.dropEffect='copy'; ic.style.borderColor='var(--live)'; ic.style.background='var(--glow)'; };
+      ic.ondragleave=()=>{ ic.style.borderColor='transparent'; ic.style.background='transparent'; };
+      ic.ondrop=e=>{
+        e.preventDefault(); e.stopPropagation();
+        ic.style.borderColor='transparent'; ic.style.background='transparent';
+        const files=[...e.dataTransfer.files].map(f=>f.name);
+        if(!files.length) return;
+        if(typeof app.onDropFiles==='function'){ app.onDropFiles(e.dataTransfer.files); }
+        else{
+          const inp=app.element.querySelector('input,textarea');
+          if(inp){ inp.value=(inp.value?inp.value+' ':'')+files.join(' '); inp.focus(); }
+        }
+        notify(app.id,'файлы: '+files.join(', '),'var(--live)');
+      };
       layer.appendChild(ic);
     });
     document.body.appendChild(layer);
@@ -506,13 +570,21 @@
     if(e.target.closest('.w420-window,#w420-taskbar,.w420-tray-menu,#w420-tools-menu,.w420-dicon,#w420-launcher,.w420-panel')) return;
     e.preventDefault(); closeAllMenus();
     const m=buildMenu([
+      {label:'📟 Открыть терминал',cmd:'term'},
+      {label:'🤖 Открыть AI-чат',cmd:'ai'},
+      {label:'🗂 Task view (Win+Tab)',action:()=>openTaskView()},
       {label:'Показать десктоп (Win+D)',action:()=>toggleShowDesktop()},
       {label:'Свернуть все окна (Win+M)',action:()=>minimizeAll()},
       {label:'Каскад окон',action:()=>cascadeWindows()},
       {label:'Плитка сеткой',action:()=>tileWindows('grid')},
       {label:'Рядами по горизонтали',action:()=>tileWindows('h')},
       {label:'Поиск приложений (Win+K)',action:()=>openLauncher()},
-      {label:'Центр уведомлений',action:()=>toggleNotifPanel()}
+      {label:'Центр уведомлений',action:()=>toggleNotifPanel()},
+      // C1/C2: обои и тема прямо из меню десктопа
+      {label:'🖼 Обои ▸',action:()=>wallpaperMenu(e.clientX+10,e.clientY)},
+      {label:'🎨 Тема ▸',action:()=>themeMenu(e.clientX+10,e.clientY)},
+      {label:'🔄 Обновить иконки',action:()=>{ initDesktopIcons(); notify('w420','иконки обновлены','var(--live)'); }},
+      {label:'ℹ Свойства десктопа',action:()=>notify('w420','столов: '+STATE.ws.length+', окон: '+STATE.activeApps.length+', тема: '+(document.documentElement.getAttribute('data-theme')||'matrix'),'var(--wip)')}
     ]);
     document.body.appendChild(m); m.style.display='block';
     m.style.left=Math.min(e.clientX,innerWidth-240)+'px'; m.style.top=Math.min(e.clientY,innerHeight-240)+'px';
@@ -914,7 +986,8 @@
     initDesktopIcons, toggleShowDesktop, minimizeAll, cascadeWindows, tileWindows,
     openLauncher, closeLauncher, toggleNotifPanel, toggleCalendar, startClock,
     snapAt, snapFocused, showPreview, hidePreview, openTaskView, closeTaskView, shadeWindow, openWindowMenu, saveLayout, loadLayout,
-    visibleApps, switchWs, newWs, closeWs, moveWindowToWs
+    visibleApps, switchWs, newWs, closeWs, moveWindowToWs,
+    WALLPAPERS, applyWallpaper, wallpaperMenu, themeMenu
   };
 
   // === Инициализация (регистрация 10 базовых приложений) ===
@@ -941,6 +1014,7 @@
     register('settings',{icon:'\u2699\ufe0f',label:'Settings',section:'#spanel',basicMenu:{cmds:[{label:'Close',action:()=>{const s=$('#spanel');if(s)s.hidden=true}}]}});
     initDesktopIcons(); // после регистрации всех приложений
     { const L=loadLayout(); if(L&&L.wsCount>1){ STATE.ws=Array.from({length:L.wsCount},()=>[]); STATE.wsIndex=Math.min(L.wsIndex||0,L.wsCount-1); renderTaskbar(); } }
+    applyWallpaper(); // C1: обои при старте (свой выбор или дефолт темы)
     setTimeout(()=>{ window.Desktop.openWindow('term'); }, 300);
   });
 
