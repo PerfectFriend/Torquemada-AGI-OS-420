@@ -7,8 +7,8 @@
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Ubuntu%2024.04%2B%20%7C%20Fedora%20-L0F)
 [![RC1](https://img.shields.io/badge/status-RC1%20planning-blueviolet)](RC1-PLAN.md)
 
-![Torquemada 228 AGI banner](banner-hero.png)
-<p align="center"><sub>Vector-версия: <a href="banner-hero.svg">banner-hero.svg</a> · промпты для Grok: <a href="BANNER-PROMPTS.md">BANNER-PROMPTS.md</a></sub></p>
+![Torquemada 228 AGI banner](banner-hero.jpg)
+<p align="center"><sub>AI-баннеры: Grok · векторная версия: <a href="banner-hero.svg">banner-hero.svg</a> · промпты: <a href="BANNER-PROMPTS.md">BANNER-PROMPTS.md</a></sub></p>
 
 > **«Доверяем только своим пакетам — чужие все дропаем, для них нет хостов.»**
 
@@ -16,7 +16,7 @@
 
 ## 🔥 Основные возможности
 
-![Возможности Torquemada 228 AGI](banner-features.png)
+![Возможности Torquemada 228 AGI](banner-features.jpg)
 
 | Модуль | Что делает |
 |---|---|
@@ -50,7 +50,7 @@ bash SETUP.sh [--from-release]
 
 Подробно: [`SETUP.md`](SETUP.md).
 
-![Поток установки](install-flow.png)
+![Поток установки](banner-install.jpg)
 
 ## 🎮 Первый запуск
 
