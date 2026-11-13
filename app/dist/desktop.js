@@ -306,6 +306,7 @@
 
   // === Открыть приложение ===
   function openApp(appId){
+    if(appId==='classic'){ toggleClassic(); return; } // спец-приложение: переключение режимов UI
     const app=STATE.apps[appId]; if(!app) return;
     if(app.aliasOf){ // deep-link: открыть целевое окно и проскроллить к карточке
       openWindow(app.aliasOf);
@@ -314,6 +315,24 @@
     }
     openWindow(appId);
   }
+
+  // === Переключение режимов UI: DESKTOP (иконки+окна) ↔ CLASSIC (панели) ===
+  function toggleClassic(){
+    const desktopOn = document.body.classList.toggle('w420-desktop');
+    if(!desktopOn){
+      // вошли в классический режим: показываем потоковый UI, активная секция — term
+      document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on', v.id==='v-term'));
+      document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on', b.dataset.id==='term'));
+    }
+    notify('w420', desktopOn ? 'Режим: DESKTOP — иконки + окна' : 'Режим: CLASSIC UI — панели', 'var(--live)');
+  }
+  // nav/show() в классическом режиме переключает секции, а не открывает окна
+  const origShow = window.show;
+  window.show = function(id){
+    if(document.body.classList.contains('w420-desktop')){ openApp(id); return; }
+    document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on', v.id==='v-'+id));
+    document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on', b.dataset.id===id));
+  };
 
   // === Меню трея ===
   function openMenu(id, x, y){
@@ -800,6 +819,7 @@
     const items=[];
     Object.values(STATE.apps).forEach(a=>{ if(a.aliasOf) return; items.push({label:a.label, icon:a.icon, id:a.id, run:()=>openApp(a.id)}); });
     items.push({label:'Полный экран (Alt+Enter)', icon:'🖥️', run:()=>toggleFullscreen()});
+    items.push({label:'🧩 Классика UI ↔ Десктоп', icon:'🧩', run:()=>toggleClassic()});
     items.push({label:'Показать десктоп (Win+D)', icon:'🗔', run:()=>toggleShowDesktop()});
     items.push({label:'Свернуть все окна (Win+M)', icon:'🗕', run:()=>minimizeAll()});
     items.push({label:'Каскад окон', icon:'🪟', run:()=>cascadeWindows()});
@@ -1168,6 +1188,9 @@
     document.addEventListener('click',e=>{ if(e.target.closest('[id="w420-tools-menu"]') || e.target.closest('[id="w420-taskbar"]')) return; closeAllMenus(); if(!e.target.closest('.w420-panel')){ closeNotifPanel(); closeCalendar(); } });
     renderTaskbar();
     startClock();
+    document.body.classList.add('w420-desktop'); // стартуем в режиме DESKTOP: только иконки + окна + панель задач
+    // спец-приложение «Классика UI» — иконка на десктопе, переключает режим (без окна)
+    STATE.apps['classic']={id:'classic',icon:'\ud83e\udde9',label:'Классика UI',state:'hidden'};
     // 10 окон по реальным секциям index.html
     register('term',{icon:'\ud83d\udda5\ufe0f',label:'Terminal',section:'#v-term',basicMenu:{cmds:[{label:'Clear output',action:()=>{const o=$('#out');if(o)o.textContent=''}}]}});
     register('vault',{icon:'\ud83d\udd10',label:'QFS Vault',section:'#v-vault',basicMenu:{cmds:[{label:'Encrypt + save',cmd:'vault'}]}});
