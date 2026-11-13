@@ -89,6 +89,7 @@
   // === Открытие окна ===
   async function openWindow(id){
     const app=STATE.apps[id]; if(!app) return;
+    if(app.aliasOf){ openApp(id); return; } // deep-link: открыть целевое окно + скролл к карточке
     const w0=STATE.win[id];
     if(w0 && STATE.activeApps.includes(id)){
       // окно уже открыто: просто поднимаем/восстанавливаем

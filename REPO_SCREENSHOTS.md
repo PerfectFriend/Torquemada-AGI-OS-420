@@ -16,4 +16,4 @@ Place PNG screenshots in `screenshots/` (repo root), naming:
 Capture at 1920×1080, dark theme (matrix), PNG, < 500 KB each.
 Reference from README as `![…](screenshots/01-launch.png)`.
 
-Current status: placeholders — screenshots to be captured on the RC1 stand.
+Current status: **captured** (headless Chromium 1920×1080, matrix theme, 2026-11-13) — `screenshots/01..08.png`, все < 500 KB, реальные кадры UI.

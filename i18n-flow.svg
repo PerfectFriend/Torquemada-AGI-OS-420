@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="420" viewBox="0 0 1000 420">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a0e14"/>
+      <stop offset="100%" stop-color="#111824"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1f3a52"/>
+      <stop offset="100%" stop-color="#162a3c"/>
+    </linearGradient>
+    <linearGradient id="cardG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2a3d2f"/>
+      <stop offset="100%" stop-color="#1a2a21"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#00ff41"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="420" fill="url(#bg)"/>
+  <text x="24" y="34" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="700" fill="#e0e6ed">i18n — поток смены языка (RU / EN / ES)</text>
+  <text x="24" y="56" font-family="share-tech-mono,monospace" font-size="11" fill="#9aa5b1">settings lang → settings.json → bridge → словарь → hot re-render всех узлов</text>
+
+  <!-- step 1: settings -->
+  <rect x="30" y="90" width="200" height="90" rx="8" fill="url(#card)" stroke="#00ff41" stroke-width="1.5" filter="url(#glow)"/>
+  <text x="130" y="122" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#e0e6ed">⚙ Settings</text>
+  <text x="130" y="144" text-anchor="middle" font-family="share-tech-mono,monospace" font-size="10" fill="#9aa5b1">#s-lang: ru | en | es</text>
+  <text x="130" y="162" text-anchor="middle" font-family="share-tech-mono,monospace" font-size="10" fill="#9aa5b1">settings_set({lang})</text>
+
+  <line x1="230" y1="135" x2="290" y2="135" stroke="#00ff41" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- step 2: storage -->
+  <rect x="295" y="90" width="200" height="90" rx="8" fill="url(#card)" stroke="#00e5ff" stroke-width="1.5"/>
+  <text x="395" y="122" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#e0e6ed">Хранение</text>
+  <text x="395" y="144" text-anchor="middle" font-family="share-tech-mono,monospace" font-size="10" fill="#9aa5b1">~/.w420/settings.json (Tauri)</text>
+  <text x="395" y="162" text-anchor="middle" font-family="share-tech-mono,monospace" font-size="10" fill="#9aa5b1">fallback: localStorage</text>
+
+  <line x1="495" y1="135" x2="555" y2="135" stroke="#00ff41" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- step 3: bridge -->
+  <rect x="560" y="90" width="200" height="90" rx="8" fill="url(#cardG)" stroke="#ffb000" stroke-width="1.5" filter="url(#glow)"/>
+  <text x="660" y="122" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#e0e6ed">i18n bridge (JS)</text>
+  <text x="660" y="144" text-anchor="middle" font-family="share-tech-mono,monospace" font-size="10" fill="#9aa5b1">i18n.js + i18n.en/es.js</text>
+  <text x="660" y="162" text-anchor="middle" font-family="share-tech-mono,monospace" font-size="10" fill="#9aa5b1">ключ = исходная строка RU</text>
+
+  <line x1="760" y1="135" x2="820" y2="135" stroke="#00ff41" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- step 4: DOM -->
+  <rect x="825" y="90" width="145" height="90" rx="8" fill="url(#cardG)" stroke="#b26bff" stroke-width="1.5"/>
+  <text x="897" y="122" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#e0e6ed">Re-render DOM</text>
+  <text x="897" y="144" text-anchor="middle" font-family="share-tech-mono,monospace" font-size="10" fill="#9aa5b1">все текстовые узлы</text>
+  <text x="897" y="162" text-anchor="middle" font-family="share-tech-mono,monospace" font-size="10" fill="#9aa5b1">hot, без reload</text>
+
+  <!-- dictionaries row -->
+  <rect x="30" y="230" width="290" height="120" rx="8" fill="#141c28" stroke="#2a3a4f"/>
+  <text x="175" y="258" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#e0e6ed">Словари (по 701 ключу)</text>
+  <text x="48" y="285" font-family="share-tech-mono,monospace" font-size="11" fill="#00ff41">ru — исходные строки (ключи)</text>
+  <text x="48" y="308" font-family="share-tech-mono,monospace" font-size="11" fill="#00e5ff">en — window.I18N_EN {…}</text>
+  <text x="48" y="331" font-family="share-tech-mono,monospace" font-size="11" fill="#ffb000">es — window.I18N_ES {…}</text>
+
+  <line x1="320" y1="290" x2="380" y2="290" stroke="#00ff41" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <rect x="385" y="230" width="280" height="120" rx="8" fill="#141c28" stroke="#2a3a4f"/>
+  <text x="525" y="258" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#e0e6ed">Механика перевода узла</text>
+  <text x="403" y="285" font-family="share-tech-mono,monospace" font-size="10" fill="#9aa5b1">1. node.__ru = исходник (один раз)</text>
+  <text x="403" y="306" font-family="share-tech-mono,monospace" font-size="10" fill="#9aa5b1">2. точный ключ → иначе prefix-match</text>
+  <text x="403" y="327" font-family="share-tech-mono,monospace" font-size="10" fill="#9aa5b1">3. нет ключа → fallback на RU</text>
+
+  <line x1="665" y1="290" x2="725" y2="290" stroke="#00ff41" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <rect x="730" y="230" width="240" height="120" rx="8" fill="#141c28" stroke="#2a3a4f"/>
+  <text x="850" y="258" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#e0e6ed">Область покрытия</text>
+  <text x="748" y="285" font-family="share-tech-mono,monospace" font-size="10" fill="#9aa5b1">UI-строки: ~87% (610/695)</text>
+  <text x="748" y="306" font-family="share-tech-mono,monospace" font-size="10" fill="#9aa5b1">темы и языки в Settings</text>
+  <text x="748" y="327" font-family="share-tech-mono,monospace" font-size="10" fill="#9aa5b1">голос TTS следует за lang</text>
+
+  <text x="24" y="392" font-family="share-tech-mono,monospace" font-size="10" fill="#5c6773">app/dist/i18n.js · app/dist/i18n.en.js · app/dist/i18n.es.js · settings_set({lang})</text>
+</svg>

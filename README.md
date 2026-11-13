@@ -60,9 +60,20 @@ bash SETUP.sh [--from-release]
 
 Откроется голографический интерфейс — переключите язык в меню **Настройки** (RU/EN/ES).
 
+## 🖥️ Скриншоты (десктопный режим)
+
+| | | |
+|---|---|---|
+| ![Первый запуск](screenshots/01-launch.png) | ![Десктоп](screenshots/02-desktop.png) | ![Task view](screenshots/03-taskview.png) |
+| Первый запуск с туториалом | Окна, иконки, taskbar с системным монитором | Task view (Win+Tab) и рабочие столы |
+| ![Настройки i18n](screenshots/04-settings-i18n.png) | ![Тема cyberpunk](screenshots/05-themes.png) | ![Health](screenshots/06-health.png) |
+| Переключение языка RU/EN/ES | 8 тем оформления | Панель здоровья хоста |
+| ![Madre](screenshots/07-madre.png) | ![Fullscreen](screenshots/08-fullscreen.png) | |
+| Firewall/honeypot | Alt+Enter — fullscreen без рамок | |
+
 ## 📊 Как это работает
 
-[![Архитектура RC1](arch-rc1.svg)](arch-rc1.svg)
+[![Архитектура RC1](arch-rc1.svg)](arch-rc1.svg) [![i18n](i18n-flow.svg)](i18n-flow.svg) [![Модель безопасности](security-model.svg)](security-model.svg)
 
 **Установка →** бинарник + тонкий клиент на `~/.w420` → **Rust-движок** вызывает sidecars (`sing-box`, `trivy`, `gitleaks`) и nftables → **Madre** смотрит каждый пакет.
 
