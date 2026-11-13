@@ -2,8 +2,9 @@
 //!
 //! sing-box sidecar (клиентские прокси) уже есть в bridge.rs; здесь — WG-сервер:
 //! генерация ключей, конфиг, добавление/отзыв peer'ов, start/stop, мониторинг handshake/трафика.
-//! Управление интерфейсом идёт через `sudo -n wg-quick / wg` — см. scripts/root_setup.sh
-//! (там должны быть NOPASSWD-записи для /usr/sbin/wg-quick, /usr/bin/wg, /usr/sbin/ip).
+//! Управление интерфейсом идёт через `sudo -n wg setconf / wg show` и `sudo -n ip ...` с фиксированными
+//! аргументами — см. scripts/root_setup.sh (минимальный sudoers-набор, аудит 13.11.2026).
+//! nft вызывается напрямую (setcap cap_net_admin), sudo — только фолбэк.
 //! Ключи и конфиг: ~/.w420/wg/ (dir 700, key 600). БД peer'ов: ~/.w420/vpn.db.
 
 use rusqlite::{Connection, OptionalExtension};
@@ -81,6 +82,19 @@ impl VpnManager {
         } else {
             Err(format!("{}{}", String::from_utf8_lossy(&out.stderr), String::from_utf8_lossy(&out.stdout)))
         }
+    }
+
+    /// Привилегированная команда: nft — сначала напрямую (setcap cap_net_admin, см. root_setup.sh),
+    /// sudo — только фолбэк. Остальные (wg/ip/tee) — только через sudoers из root_setup.sh.
+    fn run_priv(args: &[&str]) -> Result<String, String> {
+        if args[0].ends_with("/nft") || args[0] == "nft" {
+            if let Ok(o) = Command::new(args[0]).args(&args[1..]).output() {
+                if o.status.success() {
+                    return Ok(String::from_utf8_lossy(&o.stdout).into_owned());
+                }
+            }
+        }
+        Self::run_sudo_n(args)
     }
 
     fn wg(args: &[&str], sudo: bool) -> Result<String, String> {
@@ -205,7 +219,8 @@ impl VpnManager {
         let Some((pubkey, _allowed)) = row else {
             return Err(format!("peer '{name}' не найден"));
         };
-        let _ = Self::wg(&["set", WG_IFACE, "peer", &pubkey, "remove"], true);
+        // Live-удаление peer не делаем отдельной командой (sudoers не разрешает динамические аргументы wg):
+        // peer вычищается из конфига ниже и применяется через фиксированный `wg setconf w420wg /etc/wireguard/w420wg.conf`.
         // вычищаем блок из локального конфига и перезаливаем живой
         if let Ok(conf) = std::fs::read_to_string(conf_path()) {
             let cleaned = remove_peer_block(&conf, &pubkey);
@@ -295,8 +310,8 @@ impl VpnManager {
             ("nat3", vec!["/usr/sbin/nft".into(), "add rule inet w420_nat postrouting ip saddr 10.77.0.0/24 masquerade".into()]),
         ];
         for (name, args) in &steps {
-            let refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
-            if let Err(e) = Self::run_sudo_n(&refs) {
+            let refs: Vec<&str> = args.iter().map(|s| &s[..]).collect();
+            if let Err(e) = Self::run_priv(&refs) {
                 // уже существующие сущности — не ошибка
                 if e.contains("File exists") || e.contains("Address already assigned") {
                     continue;
@@ -316,7 +331,8 @@ impl VpnManager {
             vec!["/usr/sbin/ip", "link", "delete", "dev", WG_IFACE],
             vec!["/usr/sbin/nft", "delete table inet w420_nat"],
         ] {
-            if let Err(e) = Self::run_sudo_n(&args) {
+            let refs: Vec<&str> = args.iter().map(|s| &s[..]).collect();
+            if let Err(e) = Self::run_priv(&refs) {
                 if !e.contains("Cannot find device") && !e.contains("No such file") {
                     errors.push(e.chars().take(160).collect::<String>());
                 }

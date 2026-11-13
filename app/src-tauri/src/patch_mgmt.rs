@@ -143,9 +143,10 @@ impl PatchManager {
             return Ok(serde_json::json!({"ok": true, "deployed": 0, "detail": "нечего ставить"}));
         }
         let names: Vec<String> = pkgs.iter().filter_map(|p| p["package"].as_str().map(String::from)).collect();
-        let cmd_str = format!("sudo -n apt-get install -y {}", names.join(" "));
+        // Деплой — ТОЛЬКО через root-хелпер w420-apt-install (валидирует имена пакетов); см. scripts/root_setup.sh
+        let cmd_str = format!("sudo -n /usr/local/sbin/w420-apt-install {}", names.join(" "));
         let out = Command::new("sudo")
-            .args(["-n", "apt-get", "install", "-y"])
+            .args(["-n", "/usr/local/sbin/w420-apt-install"])
             .args(&names)
             .output();
         let (ok, detail, needs_root) = match out {

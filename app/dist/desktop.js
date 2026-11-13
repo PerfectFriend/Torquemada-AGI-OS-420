@@ -1079,6 +1079,90 @@
     ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
   }
 
+  // === ADVANCED: подключение ранее неиспользуемых tauri-команд к UI ===
+  // Кнопки динамически добавляются в карточку внутри #v-net; параметры — JSON через prompt (с дефолтами).
+  function wireExtraCommands(){
+    const host=$('#v-net'); if(!host) return; // NATIVE не проверяем: в веб-превью кнопки рендерятся, вызовы падают с no-tauri
+    if($('#x-adv')) return; // уже собрано
+    const card=document.createElement('div'); card.className='card'; card.id='x-adv';
+    card.innerHTML='<div class="k">ADVANCED COMMANDS <span class="b live">LIVE</span> — все tauri-команды бэкенда, ранее без UI</div>';
+    const grid=document.createElement('div'); grid.className='chips'; grid.style.marginTop='6px';
+    const out=document.createElement('pre'); out.className='mono'; out.id='x-out';
+    out.style.cssText='max-height:140px;overflow:auto;font-size:10px;margin-top:6px;white-space:pre-wrap';
+    const xlog=(s)=>{ out.textContent=(out.textContent+'\n'+s).slice(-4000); };
+    const call=async (cmd,def)=>{
+      const s=prompt('Аргументы для '+cmd+' (JSON):', JSON.stringify(def||{}));
+      if(s===null) return;
+      let args={}; try{ args=JSON.parse(s); }catch(e){ return xlog(cmd+' — не JSON: '+e); }
+      try{ const r=await inv(cmd,args); xlog('✅ '+cmd+' → '+JSON.stringify(r).slice(0,1500)); }
+      catch(e){ xlog('❌ '+cmd+' → '+(e&&e.message||e)); }
+    };
+    // [label, command, defaultArgs] — покрывает все 53 ранее неиспользуемые команды
+    const SPECS=[
+      ['FW +rule','fw_rule_add',{chain:'input',action:'drop',proto:'tcp',port:4444,src:''}],
+      ['FW −rule','fw_rule_remove',{chain:'input',handle:'0'}],
+      ['SIEM events','siem_events',{limit:50,severity:''}],
+      ['SIEM +incident','siem_incident_create',{src_ip:'10.0.0.1',severity:'high',title:'manual incident',event_ids:''}],
+      ['Host get','hosts_get',{host_id:''}],
+      ['Host status','hosts_status',{host_id:''}],
+      ['Hosts status all','hosts_status_all',{}],
+      ['Host exec','hosts_exec',{host_id:'',command:'uname -a'}],
+      ['Madre allow list','madre_allow_list',{}],
+      ['Madre allow −','madre_allow_remove',{entry:''}],
+      ['Madre events','madre_events',{limit:50}],
+      ['CIDR hosts','net_parse_cidr',{cidr:'192.168.1.0/24'}],
+      ['Port scan','net_port_scan',{host:'127.0.0.1',ports:[22,80,443,8420],timeout_ms:800}],
+      ['Scan history','net_scan_history',{limit:20}],
+      ['IDS start','traffic_start_ids',{interface:'any',filter:'',auto_block:true}],
+      ['IDS stop','traffic_stop',{}],
+      ['IDS status','traffic_status',{}],
+      ['IDS alerts','traffic_alerts',{limit:50}],
+      ['IDS stats','traffic_stats',{}],
+      ['Blocked list','traffic_blocked_list',{}],
+      ['Block IP','traffic_block_ip',{ip:'',reason:'manual'}],
+      ['Unblock IP','traffic_unblock_ip',{ip:''}],
+      ['PCAP capture','traffic_capture',{interface:'any',filter:'',duration_secs:10,name:'cap'}],
+      ['Eve sync','traffic_eve_sync',{}],
+      ['Traffic AI','traffic_ai_analyze',{limit:50}],
+      ['Patch scan local','patch_scan_local',{}],
+      ['Patch status','patch_status',{}],
+      ['Trivy scan','sysops_scan_trivy',{path:'.'}],
+      ['Gitleaks scan','sysops_scan_gitleaks',{path:'.',include_git_history:false}],
+      ['PKI status','pki_status',{cn:''}],
+      ['PKI verify','pki_verify',{cn:'',crl_check:true}],
+      ['SOC playbook','soc_playbook_run',{name:'',ip:''}],
+      ['SOC feedback','soc_feedback',{incident_id:1,worked:true}],
+      ['EDR agents','edr_agents_list',{}],
+      ['Emergency apply saved','emergency_apply_saved',{}],
+      ['Evt prune','evt_prune',{keep:1000}],
+      ['FM chmod','fmgr_chmod',{rel:'',mode:'644'}],
+      ['FM delete','fmgr_delete',{rel:'',recursive:false}],
+      ['FM remote read','fmgr_remote_read',{host_id:'',path:'/etc/hostname',limit:4000}],
+      ['FM remote stat','fmgr_remote_stat',{host_id:'',path:''}],
+      ['DID status','did_status',{}],
+      ['DID remove','did_remove',{did:''}],
+      ['SC slots','sc_slots',{}],
+      ['Voice status','voice_status',{}],
+      ['VPN peer revoke','vpn_peer_revoke',{name:''}],
+      ['Wallet remove','wallet_remove',{address:'',password:''}],
+      ['Web ack host','web_ack_host',{ip:''}],
+      ['AD group members','ad_group_members',{group_dn:''}],
+      ['AI seed Hermes keys','ai_seed_keys_from_hermes',{}],
+      ['Cfg parse link','config_parse_link',{link:''}],
+      ['Cfg parse profiles','config_parse_profiles',{text:''}],
+      ['Cfg parse WG','config_parse_wireguard',{text:'',name:'wg0'}],
+      ['Cfg parse OVPN','config_parse_ovpn',{text:'',name:'',username:'',password:''}],
+      ['Cfg build','config_build',{profiles_json:'[]',opts_json:'{}'}],
+    ];
+    for(const [label,cmd,def] of SPECS){
+      const b=document.createElement('button'); b.className='a'; b.textContent=label;
+      b.title=cmd; b.onclick=()=>call(cmd,def);
+      grid.appendChild(b);
+    }
+    card.appendChild(grid); card.appendChild(out);
+    host.appendChild(card);
+  }
+
   // === Инициализация (регистрация 10 базовых приложений) ===
   document.addEventListener('DOMContentLoaded',()=>{
     document.addEventListener('click',e=>{ if(e.target.closest('[id="w420-tools-menu"]') || e.target.closest('[id="w420-taskbar"]')) return; closeAllMenus(); if(!e.target.closest('.w420-panel')){ closeNotifPanel(); closeCalendar(); } });
@@ -1102,6 +1186,7 @@
     register('health',deep('Health','#hl-out','\ud83e\ude7a'));
     register('settings',{icon:'\u2699\ufe0f',label:'Settings',section:'#spanel',basicMenu:{cmds:[{label:'Close',action:()=>{const s=$('#spanel');if(s)s.hidden=true}}]}});
     initDesktopIcons(); // после регистрации всех приложений
+    wireExtraCommands(); // ADVANCED: все неиспользуемые ранее команды — теперь с UI
     { const L=loadLayout(); if(L&&L.wsCount>1){ STATE.ws=Array.from({length:L.wsCount},()=>[]); STATE.wsIndex=Math.min(L.wsIndex||0,L.wsCount-1); renderTaskbar(); } }
     applyWallpaper(); // C1: обои при старте (свой выбор или дефолт темы)
     startSysmon(); // D1: инлайн-монитор в трее
