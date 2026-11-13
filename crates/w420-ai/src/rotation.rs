@@ -17,11 +17,39 @@ use crate::{
     ProviderType, RotationStrategy, RotatedChatResponse,
 };
 use crate::providers::AnyProvider;
-use chrono::{Utc, DateTime};
+use chrono::{Utc, DateTime, Duration};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{debug, error, info, warn};
+
+/// Длительность блокировки ключа после ошибки (в секундах).
+///
+/// 429 (rate limit) — фиксированные 15 минут, как в пуле ключей Hermes.
+/// 5xx / сетевая ошибка — экспоненциальный backoff: 60s, 120s, 240s … максимум 30 минут.
+/// Прочие retriable — 60 секунд.
+pub fn backoff_secs(error_count: u32, status: Option<&str>) -> u64 {
+    match status {
+        Some("429") => 15 * 60,
+        Some(s) if s.starts_with('5') => {
+            let n = error_count.max(1);
+            60u64.saturating_mul(2u64.saturating_pow(n.saturating_sub(1))).min(30 * 60)
+        }
+        None => {
+            let n = error_count.max(1);
+            60u64.saturating_mul(2u64.saturating_pow(n.saturating_sub(1))).min(30 * 60)
+        }
+        _ => 60,
+    }
+}
+
+/// Извлекает HTTP-статус из ошибки провайдера (если это HTTP-ошибка).
+pub fn status_of(e: &AIError) -> Option<String> {
+    match e {
+        AIError::Http { status, .. } => status.clone(),
+        _ => None,
+    }
+}
 
 /// Создаёт экземпляр провайдера по конфигурации.
 ///
@@ -85,6 +113,19 @@ impl KeyRotation {
         self.providers.read().await.clone()
     }
 
+    /// Сохраняет обновлённую статистику ключей (error_count / blocked_until / avg_latency_ms)
+    /// в БД провайдеров — чтобы backoff после 429/5xx действовал и между вызовами чата.
+    /// Синхронная (try_read), т.к. rusqlite Connection не Send и не может висеть в async-контексте.
+    pub fn persist_stats(&self, db: &crate::db::AIProviderDB) -> Result<(), String> {
+        let keys = self.keys.try_read().map_err(|e| format!("блокировка ключей: {e}"))?;
+        for k in keys.values() {
+            if let Err(e) = db.update_key_stats(&k.id, k.avg_latency_ms, k.error_count, k.blocked_until.as_deref()) {
+                warn!("не удалось сохранить статистику ключа {}: {e}", k.id);
+            }
+        }
+        Ok(())
+    }
+
     /// Возвращает список ключей для указанного провайдера.
     pub async fn list_keys_for_provider(&self, provider_id: &str) -> Vec<ProviderKeyConfig> {
         self.keys
@@ -112,7 +153,7 @@ impl KeyRotation {
         preferred_provider: Option<ProviderType>,
     ) -> Result<RotatedChatResponse, AIError> {
         let provs = self.providers.read().await;
-        let keys = self.keys.read().await;
+        let mut keys = self.keys.read().await.clone(); // клон: будем обновлять статистику ошибок
 
         // Фильтруем включённые провайдеры
         let mut active_providers: Vec<&ProviderConfig> = provs
@@ -133,10 +174,11 @@ impl KeyRotation {
         let mut last_error: Option<AIError> = None;
 
         for provider_config in active_providers.iter() {
-            // Получаем ключи для этого провайдера
-            let mut provider_keys: Vec<&ProviderKeyConfig> = keys
+            // Получаем ключи для этого провайдера (клонируем, чтобы потом мутировать статистику в `keys`)
+            let mut provider_keys: Vec<ProviderKeyConfig> = keys
                 .values()
                 .filter(|k| k.provider_id == provider_config.id && k.is_active)
+                .cloned()
                 .collect();
 
             // Фильтруем ключи, которые не заблокированы backoff'ом
@@ -210,7 +252,13 @@ impl KeyRotation {
 
                 match result {
                     Ok(response) => {
-                        // Успех — возвращаем ответ
+                        // Успех — сбрасываем счётчик ошибок и запоминаем latency ключа
+                        if let Some(k) = keys.get_mut(&key_config.id) {
+                            k.error_count = 0;
+                            k.blocked_until = None;
+                            k.avg_latency_ms = Some(_elapsed);
+                        }
+                        *self.keys.write().await = keys.clone();
                         info!(
                             "Успешный ответ от провайдера {}, ключ {}",
                             provider_config.name, key_config.id
@@ -235,11 +283,18 @@ impl KeyRotation {
                             continue;
                         }
 
-                        // Retriable ошибка (429, 502, 503, 504, сетевая) — переходим к следующему ключу
-                        debug!(
-                            "Ключ {} провайдера {} вернул retriable ошибку: {}. Переходим к следующему.",
-                            key_config.id, provider_config.name, e
-                        );
+                        // Retriable ошибка (429, 5xx, сеть) — блокируем ключ на backoff и идём дальше.
+                        // Блокировка видна и при следующем вызове: ключ с blocked_until в будущем отфильтровывается.
+                        let status = status_of(&e);
+                        if let Some(k) = keys.get_mut(&key_config.id) {
+                            k.error_count = k.error_count.saturating_add(1);
+                            let secs = backoff_secs(k.error_count, status.as_deref());
+                            k.blocked_until = Some((Utc::now() + Duration::seconds(secs as i64)).to_rfc3339());
+                            warn!(
+                                "Ключ {} провайдера {}: ошибка {:?} (статус {:?}) → блокировка на {} с (error_count={})",
+                                key_config.id, provider_config.name, e, status, secs, k.error_count
+                            );
+                        }
                         continue;
                     }
                 }
@@ -251,7 +306,8 @@ impl KeyRotation {
             );
         }
 
-        // Все провайдеры и ключи исчерпаны
+        // Все провайдеры и ключи исчерпаны — сохраняем обновлённую статистику ошибок
+        *self.keys.write().await = keys;
         Err(match last_error {
             Some(e) => AIError::AllKeysExhausted {
                 provider: format!("все провайдеры (последняя ошибка: {e})"),
@@ -359,5 +415,34 @@ mod tests {
     fn test_rotation_strategy_default() {
         let rotation = KeyRotation::new();
         assert_eq!(rotation.strategy(), RotationStrategy::FastestFirst);
+    }
+
+    #[test]
+    fn test_backoff_429_fixed_15min() {
+        assert_eq!(backoff_secs(1, Some("429")), 15 * 60);
+        assert_eq!(backoff_secs(9, Some("429")), 15 * 60); // не зависит от счётчика
+    }
+
+    #[test]
+    fn test_backoff_5xx_exponential_capped() {
+        assert_eq!(backoff_secs(1, Some("503")), 60);
+        assert_eq!(backoff_secs(2, Some("503")), 120);
+        assert_eq!(backoff_secs(3, Some("502")), 240);
+        assert_eq!(backoff_secs(10, Some("500")), 30 * 60); // cap 30 минут
+        assert_eq!(backoff_secs(5, None), 960); // 60 * 2^4
+        assert_eq!(backoff_secs(6, None), 30 * 60); // cap 30 минут
+    }
+
+    #[test]
+    fn test_backoff_other_retriable_60s() {
+        assert_eq!(backoff_secs(1, Some("408")), 60);
+    }
+
+    #[test]
+    fn test_status_of_http_error() {
+        let e = AIError::Http { provider: "nvidia".into(), status: Some("429".into()), message: "rl".into() };
+        assert_eq!(status_of(&e), Some("429".to_string()));
+        let e2 = AIError::Config("x".into());
+        assert_eq!(status_of(&e2), None);
     }
 }

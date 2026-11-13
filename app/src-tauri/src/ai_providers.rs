@@ -227,14 +227,24 @@ pub async fn chat_messages(
         messages,
         model,
         temperature: 0.3,
-        max_tokens: Some(1024),
+        // 4096 — чтобы длинные ответы (content) не обрезались пустыми при лимите
+        max_tokens: Some(4096),
         stream: false,
     };
 
     let result = rotation
         .chat_completion_with_rotation(request, None)
-        .await
-        .map_err(|e| format!("запрос через ротацию не удался: {e}"))?;
+        .await;
+
+    // Персистим статистику ключей (backoff после 429/5xx, latency после успеха) —
+    // иначе при следующем вызове (новая ротация из БД) блокировки потеряются.
+    {
+        if let Ok(db2) = AIProviderDB::open() {
+            let _ = rotation.persist_stats(&db2);
+        }
+    }
+
+    let result = result.map_err(|e| format!("запрос через ротацию не удался: {e}"))?;
 
     // Маску ключа-ответчика восстанавливаем по key_id из БД (сам ключ не светим)
     let key_mask = {
@@ -473,6 +483,108 @@ pub fn ai_provider_add_key(provider_id: String, api_key: String, nickname: Optio
         error_count: 0,
         blocked_until: None,
     })
+}
+
+/// Извлекает все NVIDIA-ключи (nvapi-…) из JSON-файла пула Hermes (auth.json).
+/// Ключи НЕ выводятся наружу — только факт извлечения. Для тестов.
+pub fn extract_nvapi_keys_from_file(path: &std::path::Path) -> Vec<String> {
+    let Ok(s) = std::fs::read_to_string(path) else { return Vec::new() };
+    let mut out = Vec::new();
+    // ищем все вхождения nvapi-… в сыром тексте (пул хранит ключи в открытом виде внутри auth.json)
+    let mut rest = s.as_str();
+    while let Some(i) = rest.find("nvapi-") {
+        let tail = &rest[i..];
+        let end = tail.find(|c: char| !(c.is_ascii_alphanumeric() || c == '_' || c == '-')).unwrap_or(tail.len());
+        let k = &tail[..end];
+        if k.len() >= 20 { out.push(k.to_string()); }
+        rest = &tail[end..];
+    }
+    out.sort();
+    out.dedup();
+    out
+}
+
+/// Сидирует NVIDIA-ключи из пула Hermes (`~/.hermes/auth.json` + env `NVIDIA_API_KEY`)
+/// в локальную БД провайдеров W420. Ключи шифруются AES-256-GCM перед сохранением,
+/// дубликаты (по маске «…last4») пропускаются. Возвращает число НОВЫХ добавленных ключей.
+///
+/// Провайдер NVIDIA NIM создаётся автоматически, если его ещё нет.
+pub fn seed_nvidia_keys_from_hermes() -> Result<usize, String> {
+    use w420_ai::{ProviderConfig, ProviderKeyConfig, ProviderType};
+    use w420_ai::encryption::encrypt_api_key;
+
+    let mut raw: Vec<String> = Vec::new();
+    if let Ok(k) = std::env::var("NVIDIA_API_KEY") {
+        if k.starts_with("nvapi-") { raw.push(k); }
+    }
+    if let Ok(home) = std::env::var("HOME") {
+        let auth = std::path::Path::new(&home).join(".hermes/auth.json");
+        raw.extend(extract_nvapi_keys_from_file(&auth));
+    }
+    raw.sort();
+    raw.dedup();
+    if raw.is_empty() {
+        return Ok(0);
+    }
+
+    let db = AIProviderDB::open().map_err(|e| format!("БД: {e}"))?;
+
+    // ensure NVIDIA провайдер
+    let providers = db.list_providers().map_err(|e| format!("провайдеры: {e}"))?;
+    let nvidia = providers.iter().find(|p| p.provider_type == ProviderType::Nvidia && p.is_enabled);
+    let provider_id = match nvidia {
+        Some(p) => p.id.clone(),
+        None => {
+            let cfg = ProviderConfig {
+                id: format!("prov-{}", uuid::Uuid::new_v4()),
+                provider_type: ProviderType::Nvidia,
+                name: "NVIDIA NIM".to_string(),
+                endpoint: ProviderType::Nvidia.default_endpoint().unwrap_or("https://integrate.api.nvidia.com/v1").to_string(),
+                models: vec!["mistralai/mistral-large-4-1t-a52b".to_string()],
+                is_enabled: true,
+                created_at: chrono::Utc::now().to_rfc3339(),
+            };
+            db.add_provider(&cfg).map_err(|e| format!("add_provider: {e}"))?;
+            cfg.id
+        }
+    };
+
+    // существующие маски ключей этого провайдера (дедупликация)
+    let existing_masks: std::collections::HashSet<String> = db
+        .list_keys_for_provider(&provider_id)
+        .unwrap_or_default()
+        .iter()
+        .filter_map(|k| k.nickname.clone())
+        .collect();
+
+    let mut added = 0usize;
+    for key in raw {
+        let mask = format!("…{}", &key[key.len().saturating_sub(4)..]);
+        let nick = format!("hermes-{mask}");
+        if existing_masks.contains(&nick) { continue; } // уже засеяно
+        let encrypted = encrypt_api_key(&key).map_err(|e| format!("шифрование: {e}"))?;
+        let kc = ProviderKeyConfig {
+            id: format!("key-{}", uuid::Uuid::new_v4()),
+            provider_id: provider_id.clone(),
+            nickname: Some(nick),
+            encrypted_key: encrypted,
+            is_active: true,
+            last_tested: None,
+            avg_latency_ms: None,
+            error_count: 0,
+            blocked_until: None,
+            created_at: chrono::Utc::now().to_rfc3339(),
+        };
+        db.add_key(&kc).map_err(|e| format!("add_key: {e}"))?;
+        added += 1;
+    }
+    Ok(added)
+}
+
+/// Tauri-команда: ручной запуск сидирования ключей из пула Hermes (обычно вызывается и при старте).
+#[tauri::command]
+pub fn ai_seed_keys_from_hermes() -> Result<usize, String> {
+    seed_nvidia_keys_from_hermes()
 }
 
 #[tauri::command]
@@ -767,6 +879,31 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_extract_nvapi_keys_from_file() {
+        // парсер пула Hermes: достаёт только nvapi-… ключи, дедуплицирует, не трогает прочие
+        let dir = std::env::temp_dir().join(format!("w420-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let f = dir.join("auth.json");
+        std::fs::write(&f, r#"{"entries":[{"key":"nvapi-aaaaaaaaaaaaaaaaaaaaaaaaaaaa1"},{"key":"nvapi-bbbbbbbbbbbbbbbbbbbbbbbbbbb2"},{"key":"nvapi-aaaaaaaaaaaaaaaaaaaaaaaaaaaa1"},{"key":"sk-notnvidia"}]}"#).unwrap();
+        let keys = extract_nvapi_keys_from_file(&f);
+        assert_eq!(keys.len(), 2, "дедупликация + фильтр nvapi-: {keys:?}");
+        assert!(keys.iter().all(|k| k.starts_with("nvapi-") && k.len() >= 20));
+        // несуществующий файл — пусто, без паники
+        assert!(extract_nvapi_keys_from_file(&dir.join("nope.json")).is_empty());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Ручной прогон против реального пула Hermes: cargo test -p w420 -- --ignored seed_hermes --nocapture
+    #[test]
+    #[ignore = "пишет в реальную БД ~/.w420 — запускать вручную"]
+    fn seed_hermes_pool_real() {
+        let n = seed_nvidia_keys_from_hermes().expect("сид из пула Hermes");
+        println!("засеяно новых ключей: {n}");
+        let n2 = seed_nvidia_keys_from_hermes().expect("повторный сид");
+        assert_eq!(n2, 0, "повторный сид должен быть идемпотентным");
+    }
+
+    #[test]
     fn test_mask_hides_key() {
         // маска — только последние 4 символа, полный ключ наружу не уходит
         let fake = "nvapi-abcdef1234567890SECRET";
@@ -783,7 +920,7 @@ mod tests {
         let list = ai_providers_list().expect("БД провайдеров должна читаться");
         let nv = list.iter().find(|p| p.provider_type == "Nvidia" || p.name.contains("NVIDIA"))
             .expect("в базе должен быть провайдер NVIDIA");
-        assert_eq!(nv.keys.iter().filter(|k| k.is_active).count(), 11, "должно быть 11 активных ключей NVIDIA");
+        assert!(nv.keys.iter().filter(|k| k.is_active).count() >= 11, "должно быть минимум 11 активных ключей NVIDIA (пул Hermes досеивается при старте)");
         for k in &nv.keys {
             assert!(k.mask.starts_with('…'), "маска обязана быть маской: {}", k.mask);
             assert!(!k.mask.contains("nvapi-"), "маска не должна содержать префикс ключа");

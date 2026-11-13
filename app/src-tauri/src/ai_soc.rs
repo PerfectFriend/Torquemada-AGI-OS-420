@@ -532,10 +532,13 @@ impl SocManager {
                 ChatMessage { role: "user".into(), content: payload },
             ],
             temperature: 0.3,
-            max_tokens: Some(1024),
+            max_tokens: Some(4096),
             stream: false,
         };
-        let resp = rotation.chat_completion_with_rotation(request, None).await.map_err(|e| format!("AI: {e}"))?;
+        let resp = rotation.chat_completion_with_rotation(request, None).await;
+        // персистим статистику ключей (backoff/latency) в БД провайдеров
+        if let Ok(db) = w420_ai::db::AIProviderDB::open() { let _ = rotation.persist_stats(&db); }
+        let resp = resp.map_err(|e| format!("AI: {e}"))?;
         // сохраним сводку к последнему циклу
         if let Ok(c) = self.conn() {
             let _ = c.execute(
@@ -585,10 +588,13 @@ impl SocManager {
                 ChatMessage { role: "user".into(), content: ctx },
             ],
             temperature: 0.4,
-            max_tokens: Some(800),
+            max_tokens: Some(4096),
             stream: false,
         };
-        let resp = rotation.chat_completion_with_rotation(request, None).await.map_err(|e| format!("AI: {e}"))?;
+        let resp = rotation.chat_completion_with_rotation(request, None).await;
+        // персистим статистику ключей (backoff/latency) в БД провайдеров
+        if let Ok(db) = w420_ai::db::AIProviderDB::open() { let _ = rotation.persist_stats(&db); }
+        let resp = resp.map_err(|e| format!("AI: {e}"))?;
         Ok(resp.response.content)
     }
 
@@ -651,10 +657,13 @@ impl SocManager {
                 },
             ],
             temperature: 0.4,
-            max_tokens: Some(700),
+            max_tokens: Some(4096),
             stream: false,
         };
-        let resp = rotation.chat_completion_with_rotation(request, None).await.map_err(|e| format!("AI: {e}"))?;
+        let resp = rotation.chat_completion_with_rotation(request, None).await;
+        // персистим статистику ключей (backoff/latency) в БД провайдеров
+        if let Ok(db) = w420_ai::db::AIProviderDB::open() { let _ = rotation.persist_stats(&db); }
+        let resp = resp.map_err(|e| format!("AI: {e}"))?;
         Ok(resp.response.content)
     }
 }
