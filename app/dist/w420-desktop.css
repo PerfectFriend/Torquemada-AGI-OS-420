@@ -173,3 +173,5 @@ body.w420-desktop > main { display: block !important; padding: 0 !important; }
 body.w420-desktop > main > nav, body.w420-desktop > main > aside { display: none !important; }
 body.w420-desktop section.view { display: none !important; }
 body.w420-desktop .w420-window section.view { display: flex !important; }
+/* панели, случайно прибитые прямо к body (fallback в JS) — на десктопе не показываем */
+body.w420-desktop > .panel, body.w420-desktop > .card { display: none !important; }
