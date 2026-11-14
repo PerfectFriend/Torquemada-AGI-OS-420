@@ -492,7 +492,14 @@
     const tut=document.createElement('button'); tut.className='a'; tut.style.cssText='margin-top:8px;width:100%';
     tut.textContent='❓ Показать обучение снова'; tut.onclick=()=>{ toggleToolsMenu(); showTutorial(true); };
     tm.appendChild(tut);
-    const outside=()=>{ if(STATE.toolsOpen){ toggleToolsMenu(); document.removeEventListener('click',outside); } };
+    // одноразовый «клик вне меню»: снимаем СРАЗУ при срабатывании (а не только
+    // внутри if), иначе после закрытия кнопкой обработчик остаётся висеть на
+    // document и съедает следующее открытие, закрывая меню в том же событии.
+    const outside=e=>{
+      document.removeEventListener('click',outside);
+      if(e.target.closest('#w420-tools-menu') || e.target.closest('#w420-taskbar')) return; // клик по меню/кнопке — не «вне»
+      if(STATE.toolsOpen) toggleToolsMenu();
+    };
     setTimeout(()=>document.addEventListener('click',outside),10);
   }
 
