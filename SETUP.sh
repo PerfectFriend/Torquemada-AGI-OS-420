@@ -164,6 +164,15 @@ systemctl --user daemon-reload >/dev/null 2>&1 || true
 systemctl --user enable --now torquemada-228-agi.service >/dev/null 2>&1 || \
     info "systemd-юнит создан вручную — активируйте: systemctl --user enable --now torquemada-228-agi.service"
 
+# TTS/STT-сервер (w420_tts, порт 8420) в автозагрузке НЕ нужен: приложение само
+# поднимает его по требованию (~/.w420/tts.json) и перезапускает, если процесс умер.
+# Отдельный сервис для него создаёт только дубли и конфликт за порт 8420.
+
+# Проверка автозагрузки (для оператора):
+#   systemctl --user is-enabled torquemada-228-agi.service   -> enabled
+#   ls -la "$HOME/.config/autostart/"                        -> torquemada-228-desktop-agi.desktop
+#   loginctl show-user "$USER" -p Linger                     -> Linger=yes (нужен для старта без GUI-входа)
+
 # --------------------------------------------------------------
 # Настройка привилегий (только по согласию пользователя)
 # --------------------------------------------------------------
