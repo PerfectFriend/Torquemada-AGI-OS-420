@@ -1,8 +1,24 @@
 #!/usr/bin/env bash
 # root_setup.sh — W420 root setup. Запускается ТОЛЬКО пользователем от своего имени (sudo);
 # пароль никуда не передаётся, скрипт интерактивный и безопасен.
+# Security-аудит 14.11.2026: жёстко заданный пользователь убран — целевой пользователь
+# определяется автоматически (TARGET_USER), sudoers и chown привязываются к нему.
 set -uo pipefail
 echo "== W420 root setup $(date) =="; echo
+
+# 0) Целевой пользователь: от кого запущен sudo (никогда не root напрямую)
+TARGET_USER="${SUDO_USER:-$(logname 2>/dev/null || echo "${USER:-}") }"
+TARGET_USER="${TARGET_USER// /}"
+if [ -z "$TARGET_USER" ] || [ "$TARGET_USER" = "root" ]; then
+  echo "Ошибка: запускайте через sudo от обычного пользователя (sudo bash root_setup.sh)" >&2
+  exit 1
+fi
+TARGET_HOME="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
+if [ -z "$TARGET_HOME" ] || [ ! -d "$TARGET_HOME" ]; then
+  echo "Ошибка: не найден домашний каталог пользователя $TARGET_USER" >&2
+  exit 1
+fi
+echo "TARGET_USER=$TARGET_USER  TARGET_HOME=$TARGET_HOME"
 
 # 1) Capabilities — tcpdump/dumpcap захватывают пакеты БЕЗ sudo, nft — через CapNetAdmin
 setcap cap_net_raw,cap_net_admin+ep /usr/bin/tcpdump 2>/dev/null && echo "setcap tcpdump OK" || echo "setcap tcpdump SKIP"
@@ -27,16 +43,17 @@ exec /usr/bin/apt-get install -y -- "$@"
 HELPER
 chmod 755 /usr/local/sbin/w420-apt-install
 
-cat > /etc/sudoers.d/w420 <<'EOF'
+cat > /etc/sudoers.d/w420 <<EOF
 # W420: минимальный passwordless-набор (аудит 13.11.2026). Не расширять без аудита!
-thomas ALL=(root) NOPASSWD: /usr/bin/wg show *
-thomas ALL=(root) NOPASSWD: /usr/bin/wg setconf w420wg /etc/wireguard/w420wg.conf
-thomas ALL=(root) NOPASSWD: /usr/sbin/ip link add w420wg type wireguard, /usr/sbin/ip address add 10.77.0.1/24 dev w420wg, /usr/sbin/ip link set up dev w420wg, /usr/sbin/ip link set down dev w420wg, /usr/sbin/ip link delete dev w420wg
-thomas ALL=(root) NOPASSWD: /usr/bin/tee /etc/wireguard/w420wg.conf
-thomas ALL=(root) NOPASSWD: /usr/bin/apt-get update, /usr/local/sbin/w420-apt-install *, /usr/bin/cat /var/log/apt/history.log
+# Пользователь определяется автоматически при установке: $TARGET_USER
+$TARGET_USER ALL=(root) NOPASSWD: /usr/bin/wg show *
+$TARGET_USER ALL=(root) NOPASSWD: /usr/bin/wg setconf w420wg /etc/wireguard/w420wg.conf
+$TARGET_USER ALL=(root) NOPASSWD: /usr/sbin/ip link add w420wg type wireguard, /usr/sbin/ip address add 10.77.0.1/24 dev w420wg, /usr/sbin/ip link set up dev w420wg, /usr/sbin/ip link set down dev w420wg, /usr/sbin/ip link delete dev w420wg
+$TARGET_USER ALL=(root) NOPASSWD: /usr/bin/tee /etc/wireguard/w420wg.conf
+$TARGET_USER ALL=(root) NOPASSWD: /usr/bin/apt-get update, /usr/local/sbin/w420-apt-install *, /usr/bin/cat /var/log/apt/history.log
 EOF
 chmod 440 /etc/sudoers.d/w420
-visudo -c -f /etc/sudoers.d/w420 >/dev/null 2>&1 && echo "sudoers OK" || echo "sudoers CHECK_FAILED"
+visudo -c -f /etc/sudoers.d/w420 >/dev/null 2>&1 && echo "sudoers OK" || { echo "sudoers CHECK_FAILED"; exit 1; }
 mkdir -p /etc/wireguard && chmod 700 /etc/wireguard
 
 # 3) Внешние пакеты (sidecar-инструменты плана эволюции)
@@ -57,8 +74,8 @@ table inet w420_em {
 EOF
 if nft -f /tmp/w420_test.nft; then echo "NFT_APPLY_OK"; nft delete table inet w420_em && echo "NFT_TEST_REVERTED"; else echo "NFT_APPLY_FAILED"; fi
 
-# 5) Права на данные w420
-chown -R thomas:thomas /home/thomas/.w420 2>/dev/null || true
-mkdir -p /home/thomas/.w420
+# 5) Права на данные w420 (домашний каталог целевого пользователя, не захардкоженный путь)
+mkdir -p "$TARGET_HOME/.w420"
+chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/.w420" 2>/dev/null || true
 
 echo "== DONE =="
