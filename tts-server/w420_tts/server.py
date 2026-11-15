@@ -134,13 +134,13 @@ def load_engine():
         # буферы инференса). Если доступной памяти меньше порога — честно говорим
         # об ошибке вместо того чтобы ловить OOM-kill от ядра.
         try:
-            avail_gb = int(
+            avail_mb = int(
                 next(l for l in open("/proc/meminfo") if l.startswith("MemAvailable")).split()[1]
-            ) / (1024 * 1024)
-            if avail_gb < 6144:
+            ) / 1024
+            if avail_mb < 6144:  # порог 6 ГБ
                 state.update(
                     status="error",
-                    msg=f"XTTS-v2 на CPU требует ~6 ГБ свободной RAM (сейчас доступно {avail_gb:.1f} ГБ). "
+                    msg=f"XTTS-v2 на CPU требует ~6 ГБ свободной RAM (сейчас доступно {avail_mb / 1024:.1f} ГБ). "
                     "Освободите память или озвучка уйдёт на espeak-ng (фолбэк в приложении).",
                 )
                 return
