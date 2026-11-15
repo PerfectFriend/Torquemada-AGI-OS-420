@@ -130,6 +130,22 @@ def load_engine():
         if os.environ.get("COQUI_TOS_AGREED") != "1":
             state.update(status="error", msg="лицензия XTTS (CPML, некоммерческая) не принята")
             return
+        # RAM-гейт (аудит 15.11): XTTS-v2 на CPU держит в памяти ~4 ГБ (веса fp32 +
+        # буферы инференса). Если доступной памяти меньше порога — честно говорим
+        # об ошибке вместо того чтобы ловить OOM-kill от ядра.
+        try:
+            avail_gb = int(
+                next(l for l in open("/proc/meminfo") if l.startswith("MemAvailable")).split()[1]
+            ) / (1024 * 1024)
+            if avail_gb < 6144:
+                state.update(
+                    status="error",
+                    msg=f"XTTS-v2 на CPU требует ~6 ГБ свободной RAM (сейчас доступно {avail_gb:.1f} ГБ). "
+                    "Освободите память или озвучка уйдёт на espeak-ng (фолбэк в приложении).",
+                )
+                return
+        except Exception:
+            pass  # не смогли прочитать meminfo — пробуем грузить как раньше
         state.update(status="loading", msg="загрузка XTTS-v2 (первый запуск скачивает около 1,8 ГБ)")
         import torch
         from TTS.api import TTS

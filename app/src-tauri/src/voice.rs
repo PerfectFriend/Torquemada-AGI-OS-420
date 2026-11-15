@@ -175,13 +175,14 @@ pub struct VoiceSayResult {
 #[tauri::command]
 pub fn voice_say(text: String, voice_id: Option<String>, lang: Option<String>) -> VoiceSayResult {
     let (port, token) = tts_conf();
+    let lang_hint = lang.clone();
     let body = serde_json::json!({
         "text": text,
         "lang": lang.unwrap_or_else(|| "ru".into()),
         "voice_id": voice_id,
         "speed": 1.0,
     });
-    match http_req(
+    let res = match http_req(
         port,
         "POST",
         "/speak",
@@ -216,7 +217,48 @@ pub fn voice_say(text: String, voice_id: Option<String>, lang: Option<String>) -
             path: String::new(),
             error: e,
         },
+    };
+    // Фолбэк (аудит 15.11): если XTTS-сервер не поднялся (OOM при загрузке модели
+    // на слабом железе) — озвучиваем через espeak-ng, чтобы TTS работал всегда.
+    if !res.ok {
+        if let Some(fb) = espeak_fallback(&text, lang_hint.as_deref()) {
+            return fb;
+        }
     }
+    res
+}
+
+/// Запасной синтез через espeak-ng (офлайн, без модели). Возвращает WAV как VoiceSayResult.
+fn espeak_fallback(text: &str, lang: Option<&str>) -> Option<VoiceSayResult> {
+    let lang = match lang.unwrap_or("ru") {
+        "en" => "en",
+        "es" => "es",
+        _ => "ru",
+    };
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
+    let dir = PathBuf::from(&home).join(".w420/voice_out");
+    fs::create_dir_all(&dir).ok()?;
+    let path = dir.join(format!("say_{}.wav", chrono::Utc::now().timestamp_millis()));
+    let out = std::process::Command::new("espeak-ng")
+        .arg("-v").arg(lang)
+        .arg("-s").arg("150")
+        .arg("-w").arg(&path)
+        .arg(text)
+        .output().ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    let wav = fs::read(&path).ok()?;
+    if wav.len() < 1000 {
+        return None; // пустой/слишком короткий файл — считаем неудачей
+    }
+    Some(VoiceSayResult {
+        ok: true,
+        bytes: wav.len(),
+        b64: b64_encode(&wav),
+        path: path.to_string_lossy().to_string(),
+        error: String::new(),
+    })
 }
 
 #[derive(Serialize)]
