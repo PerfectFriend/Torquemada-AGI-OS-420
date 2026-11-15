@@ -120,12 +120,87 @@ class XttsEngine:
         return np.asarray(out["wav"], dtype=np.float32)
 
 
+class QwenEngine:
+    """Qwen3-TTS 12Hz через llama-tts (llama.cpp) — работает на GPU (Vulkan/HIP),
+    поэтому RAM-гейт XTTS на него не распространяется. Модели лежат в
+    ~/.w420/tts-models, бинарь — в W420_QWEN_TTS_BIN (или рядом с ними).
+    Клонирование голоса: --tts-speaker-file <референс.wav> (т.е. latents(path) — путь к файлу).
+    """
+
+    sr = SR
+
+    def __init__(self, bin_path, talker, mmproj):
+        self.bin = bin_path
+        self.talker = talker
+        self.mmproj = mmproj
+
+    def latents(self, path):
+        # для Qwen "latent" — это просто путь к референсному WAV спикера
+        return str(path)
+
+    def speak(self, text, lang, lat, speed):
+        import subprocess, tempfile
+
+        qwen_lang = {"ru": "ru", "en": "en", "es": "es"}.get(lang, "en")
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
+            out_path = tf.name
+        try:
+            cmd = [
+                self.bin,
+                "-m", self.talker,
+                "-mm", self.mmproj,
+                "-p", text,
+                "--tts-lang", qwen_lang,
+                "--tts-speaker-file", str(lat),
+                "-o", out_path,
+                "-ngl", "99",  # вся модель на GPU
+                "--log-disable",  # не раздражать логами в stderr
+            ]
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            if r.returncode != 0:
+                raise RuntimeError(f"llama-tts rc={r.returncode}: {r.stderr[-400:]}")
+            raw = Path(out_path).read_bytes()
+            x, sr = read_wav(raw)
+            return resample(x, sr)
+        finally:
+            try:
+                os.unlink(out_path)
+            except FileNotFoundError:
+                pass
+
+
 def load_engine():
     global engine
     try:
         if os.environ.get("W420_TTS_FAKE") == "1":
             engine = FakeEngine()
             state.update(status="ready", engine="fake", device="cpu", msg="тестовый движок (тон вместо голоса)")
+            return
+        # Выбор движка: W420_TTS_ENGINE=qwen|xtts|auto (auto: qwen, если модели на месте, иначе xtts)
+        want = os.environ.get("W420_TTS_ENGINE", "auto").lower()
+        home = Path(os.environ.get("W420_HOME", Path.home() / ".w420"))
+        tmodels = home / "tts-models"
+        qbin = os.environ.get(
+            "W420_QWEN_TTS_BIN",
+            str(Path.home() / ".hermes/tools/llamacpp-vulkan-11671-linux-x64/llama-tts"),
+        )
+        qtalker = os.environ.get("W420_QWEN_TALKER", str(tmodels / "qwen3-tts-1.7b-base-q8_0.gguf"))
+        qmm = os.environ.get("W420_QWEN_MMPROJ", str(tmodels / "mmproj-qwen3-tts-1.7b-q8_0.gguf"))
+        qwen_ok = os.path.isfile(qbin) and os.path.isfile(qtalker) and os.path.isfile(qmm)
+        if want == "qwen" or (want == "auto" and qwen_ok):
+            if not qwen_ok:
+                state.update(status="error", msg="Qwen3-TTS: не найден llama-tts или модели в ~/.w420/tts-models")
+                return
+            engine = QwenEngine(qbin, qtalker, qmm)
+            state.update(
+                status="ready",
+                engine="qwen3-tts-llamacpp",
+                device="gpu-vulkan",
+                msg=f"Qwen3-TTS 1.7B q8_0 через llama-tts ({Path(qtalker).name}), VRAM ~2.3 ГБ",
+            )
+            return
+        if want not in ("xtts", "auto"):
+            state.update(status="error", msg=f"неизвестный W420_TTS_ENGINE={want}")
             return
         if os.environ.get("COQUI_TOS_AGREED") != "1":
             state.update(status="error", msg="лицензия XTTS (CPML, некоммерческая) не принята")
