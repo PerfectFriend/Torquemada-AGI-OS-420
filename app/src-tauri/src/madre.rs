@@ -245,8 +245,12 @@ pub fn build_madre_rules(cfg: &MadreConfig) -> String {
     for a in &allow {
         s.push_str(&format!("    ip daddr {a} accept\n    ip6 daddr {a} accept\n"));
     }
-    // свои DNS/NTP наружу — только к allowlist (они уже в allow как подсети/хосты)
-    s.push_str("    udp dport 53 accept comment \"dns к allowlist выше не применяется — резолвим сами\"\n");
+    // DNS наружу — ТОЛЬКО к системным резолверам из /etc/resolv.conf (аудит 14.11, п.3.2:
+    // голый "udp dport 53 accept" убран — иначе любой процесс мог слать DNS куда угодно).
+    for ns in system_dns_servers() {
+        s.push_str(&format!("    ip daddr {ns} udp dport 53 accept comment \"dns резолвер\"\n"));
+        s.push_str(&format!("    ip daddr {ns} tcp dport 53 accept comment \"dns резолвер (fallback)\"\n"));
+    }
     s.push_str("  }\n}\n");
     s
 }
@@ -268,6 +272,23 @@ pub fn clear_madre_rules() -> Result<String, String> {
 // ============================================================================
 // Ханипот
 // ============================================================================
+
+/// Системные DNS-резолверы из /etc/resolv.conf (валидные IP, без дублей).
+fn system_dns_servers() -> Vec<String> {
+    let mut out = Vec::new();
+    if let Ok(txt) = std::fs::read_to_string("/etc/resolv.conf") {
+        for line in txt.lines() {
+            let line = line.trim();
+            if let Some(rest) = line.strip_prefix("nameserver") {
+                if let Some(ip) = rest.trim().parse::<std::net::IpAddr>().ok() {
+                    let s = ip.to_string();
+                    if !out.contains(&s) { out.push(s); }
+                }
+            }
+        }
+    }
+    out
+}
 
 /// honeypot_bind должен быть валидным IP (v4/v6) — никаких "0.0.0.0" по умолчанию.
 fn is_valid_bind_addr(s: &str) -> bool {

@@ -100,10 +100,20 @@ mkdir -p "$BIN_DIR" "$DESKTOP_DIR" "$USER_SYSTEMD" "$W420_DIR/binaries"
 # Sidecar-бинарники (включить/скачать по требованию)
 # --------------------------------------------------------------
 for b in sing-box trivy gitleaks; do
-    if [[ -f "$ROOT/app/src-tauri/binaries/$b" ]]; then
-        install -Dm755 "$ROOT/app/src-tauri/binaries/$b" "$W420_DIR/binaries/$b"
+    src="$ROOT/app/src-tauri/binaries/${b}-x86_64-unknown-linux-gnu"
+    if [[ -f "$src" ]]; then
+        # Supply-chain: сверяем SHA256 с репозиторным SHA256SUMS перед установкой (аудит 14.11, п.3.3)
+        if [[ -f "$ROOT/app/src-tauri/binaries/SHA256SUMS" ]]; then
+            expected=$(awk -v f="${b}-x86_64-unknown-linux-gnu" '$2==f{print $1}' "$ROOT/app/src-tauri/binaries/SHA256SUMS")
+            actual=$(sha256sum "$src" | awk '{print $1}')
+            if [[ -n "$expected" && "$expected" != "$actual" ]]; then
+                echo "ОШИБКА: хеш sidecar $b не совпадает с SHA256SUMS — установка прервана" >&2
+                exit 1
+            fi
+        fi
+        install -Dm755 "$src" "$W420_DIR/binaries/$b"
     elif [[ ! -x "$W420_DIR/binaries/$b" ]]; then
-        warn "sidecar $b не найден в репе — скопируйте вручную в app/src-tauri/binaries/$b"
+        warn "sidecar $b не найден в репе — скопируйте вручную в app/src-tauri/binaries/"
     fi
 done
 

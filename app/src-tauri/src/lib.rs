@@ -6,18 +6,21 @@ use tauri::Manager;
 mod bridge;
 mod tor;
 mod sysops;
+#[warn(clippy::unwrap_used)] // аудит 14.11 п.2.4: критические пути не должны паниковать
 mod hosts;
 mod threats;
 mod security_ai;
 mod net_scan;
 mod traffic;
 mod settings;
+#[warn(clippy::unwrap_used)] // аудит 14.11 п.2.4: критические пути не должны паниковать
 mod ai_providers;
 mod emergency;
 mod voice;
 mod updates;
 mod harden;
 mod hardened;
+#[warn(clippy::unwrap_used)] // аудит 14.11 п.2.4: критические пути не должны паниковать
 mod firewall;
 mod siem;
 mod edr;
@@ -33,6 +36,7 @@ mod did;
 mod radio;
 mod map;
 mod rdesk;
+#[warn(clippy::unwrap_used)] // аудит 14.11 п.2.4: критические пути не должны паниковать
 mod rat;
 mod argus;
 mod netutil;
@@ -43,6 +47,7 @@ mod reg;
 mod evtlog;
 mod taskext;
 mod fmgr;
+#[warn(clippy::unwrap_used)] // аудит 14.11 п.2.4: критические пути не должны паниковать
 mod madre;
 mod health;
 
