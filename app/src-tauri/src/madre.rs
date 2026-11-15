@@ -53,17 +53,25 @@ pub struct MadreConfig {
     /// observe — только логируем; enforce — дропаем/изолируем
     pub mode: String,
     pub honeypot_on: bool,
+    /// На какой адрес биндить honeypot-порты. По умолчанию localhost — так не
+    /// конфликтуем с реальными sshd/RDP и не расширяем attack surface (аудит 14.11).
+    /// "0.0.0.0" — только осознанно, для приманки в DMZ.
+    #[serde(default = "default_honeypot_bind")]
+    pub honeypot_bind: String,
     pub watchdog_on: bool,
     pub watchdog_secs: u64,
     /// allowlist исходящего трафика: IP/CIDR/домен-resolved IP
     pub allow: Vec<String>,
 }
 
+fn default_honeypot_bind() -> String { "127.0.0.1".into() }
+
 impl Default for MadreConfig {
     fn default() -> Self {
         Self {
             mode: "observe".into(),
             honeypot_on: false,
+            honeypot_bind: default_honeypot_bind(),
             watchdog_on: false,
             watchdog_secs: 30,
             allow: vec![
@@ -261,6 +269,11 @@ pub fn clear_madre_rules() -> Result<String, String> {
 // Ханипот
 // ============================================================================
 
+/// honeypot_bind должен быть валидным IP (v4/v6) — никаких "0.0.0.0" по умолчанию.
+fn is_valid_bind_addr(s: &str) -> bool {
+    s.parse::<std::net::IpAddr>().is_ok()
+}
+
 fn honeypot_serve(listener: TcpListener, port: u16, mgr_db: PathBuf) {
     for stream in listener.incoming() {
         match stream {
@@ -293,8 +306,12 @@ impl MadreManager {
         let db = self.db.clone();
         let mut handles = Vec::new();
         let mut bound = Vec::new();
+        let bind_addr = { self.cfg.lock().map(|g| g.honeypot_bind.clone()).unwrap_or_else(|_| "127.0.0.1".into()) };
+        if !is_valid_bind_addr(&bind_addr) { return Err(format!("плохой honeypot_bind: {bind_addr} (ожидается IP-адрес)")); }
+        self.log("honeypot", None, &format!("bind-адрес: {bind_addr}"));
         for p in HONEYPOT_PORTS {
-            match TcpListener::bind(("0.0.0.0", p)) {
+            // перед bind пробуем: порт занят — логируем и пропускаем (аудит 14.11)
+            match TcpListener::bind((bind_addr.as_str(), p)) {
                 Ok(l) => {
                     bound.push(p);
                     let db2 = db.clone();
