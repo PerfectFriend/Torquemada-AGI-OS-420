@@ -35,6 +35,11 @@ if [[ -n "${MISSING:-}" ]]; then
     else
         echo "   установите git, curl, jq, sudo, cargo (Rust), nodejs вручную"
     fi
+    # fail-fast (аудит 14.11, п.3.1): без обязательных инструментов установка не продолжается молча
+    if [[ -z "${W420_SKIP_BUILD:-}" ]]; then
+        echo "ОШИБКА: отсутствуют обязательные зависимости:$MISSING — прерываю установку (W420_SKIP_BUILD=1 — пропустить сборку)" >&2
+        exit 1
+    fi
 fi
 
 # --------------------------------------------------------------
@@ -151,7 +156,13 @@ Icon=torquemada-228
 X-GNOME-Autostart-enabled=true
 EOF
 mkdir -p "$HOME_DIR/.config/autostart"
-ln -sfn "$DESKTOP_DIR/torquemada-228-desktop-agi.desktop" "$HOME_DIR/.config/autostart/" 2>/dev/null || true
+# автозагрузка создаётся ТОЛЬКО с явного согласия (аудит 14.11, п.3.1): --autostart или W420_AUTOSTART=1
+if [[ "${W420_AUTOSTART:-0}" = "1" ]] || [[ " ${ARGS:-} " == *" --autostart "* ]]; then
+    ln -sfn "$DESKTOP_DIR/torquemada-228-desktop-agi.desktop" "$HOME_DIR/.config/autostart/" 2>/dev/null || true
+    info "автозагрузка включена (XDG autostart)"
+else
+    info "автозагрузка ВЫКЛЮЧЕНА (добавьте --autostart или W420_AUTOSTART=1, чтобы включить)"
+fi
 
 cat > "$USER_SYSTEMD/torquemada-228-agi.service" <<EOF
 [Unit]
