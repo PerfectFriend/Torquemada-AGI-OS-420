@@ -29,7 +29,9 @@ fn run(h: &crate::hosts::HostsManager, host_id: &str, cmd: String) -> Result<Str
 
 /// power action: reboot | shutdown | lock | logoff
 #[tauri::command]
-pub fn rat_power(hosts: tauri::State<'_, crate::hosts::HostsManager>, host_id: String, action: String) -> Result<Value, String> {
+pub fn rat_power(hosts: tauri::State<'_, crate::hosts::HostsManager>, host_id: String, action: String, confirm: Option<bool>) -> Result<Value, String> {
+    // destructive (reboot/shutdown/lock/logoff): hardened-режим + обязательное подтверждение
+    crate::hardened::guard_destructive("rat_power", Some(&host_id), confirm)?;
     let cmd = match action.as_str() {
         "reboot" => "systemctl reboot".to_string(),
         "shutdown" => "systemctl poweroff".to_string(),
@@ -57,8 +59,12 @@ pub fn rat_services_list(hosts: tauri::State<'_, crate::hosts::HostsManager>, ho
 
 /// action: start | stop | restart | status
 #[tauri::command]
-pub fn rat_service_control(hosts: tauri::State<'_, crate::hosts::HostsManager>, host_id: String, unit: String, action: String) -> Result<Value, String> {
+pub fn rat_service_control(hosts: tauri::State<'_, crate::hosts::HostsManager>, host_id: String, unit: String, action: String, confirm: Option<bool>) -> Result<Value, String> {
     if !valid_token(&unit) { return Err("плохое имя unit'а".into()); }
+    // stop/restart — destructive для сервиса
+    if matches!(action.as_str(), "stop" | "restart") {
+        crate::hardened::guard_destructive("rat_service_control", Some(&host_id), confirm)?;
+    }
     let verb = match action.as_str() {
         "start" | "stop" | "restart" => action.as_str(),
         "status" => "status",
@@ -85,7 +91,9 @@ pub fn rat_log_view(hosts: tauri::State<'_, crate::hosts::HostsManager>, host_id
 
 /// Очистка журнала: rotate + vacuum до минимального размера (честный «clear» для journald).
 #[tauri::command]
-pub fn rat_log_clear(hosts: tauri::State<'_, crate::hosts::HostsManager>, host_id: String) -> Result<Value, String> {
+pub fn rat_log_clear(hosts: tauri::State<'_, crate::hosts::HostsManager>, host_id: String, confirm: Option<bool>) -> Result<Value, String> {
+    // очистка журналов — destructive (потеря forensic-данных): гейт + аудит
+    crate::hardened::guard_destructive("rat_log_clear", Some(&host_id), confirm)?;
     let out = run(&hosts, &host_id, "journalctl --rotate && journalctl --vacuum-time=1s".into())?;
     Ok(json!({"cleared": true, "output": out}))
 }

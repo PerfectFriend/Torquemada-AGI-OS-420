@@ -20,3 +20,29 @@ or by email. Include a reproducer if possible. We aim to acknowledge within 72 h
 ## Supported versions
 
 Only the latest commit on `main` is supported. There are no release branches yet (RC1 stage).
+
+---
+
+## ⚠️ Предупреждение об области применения (аудит 14.11.2026, п. 2.2)
+
+> **Это инструмент системного администратора. Не устанавливайте его на недоверенные рабочие станции. Компрометация приложения = компрометация всех подключённых хостов.**
+
+Поверхность привилегий (осознанный выбор «инструмента администратора»):
+
+- RAT-команды на удалённых хостах (`rat_power`, `rat_service_control`, `rat_log_clear` и др.);
+- применение nft-правил (Madre/Firewall/emergency), изоляция хостов;
+- установка пакетов через root-хелпер `w420-apt-install`;
+- отзыв WireGuard peer'ов, деплой патчей.
+
+### Hardened-режим (`W420_HARDENED=1`)
+
+Включите env-переменную `W420_HARDENED=1` (или `"hardened": true` в `~/.w420/settings.json`). В этом режиме **полностью отключены**:
+
+- `rat_power` (reboot/shutdown/lock/logoff);
+- `rat_log_clear` (очистка журналов);
+- `rat_service_control` с действиями stop/restart;
+- `fw_isolate_host`, `fw_profile_apply`;
+- `emergency_set`, `emergency_apply_saved`;
+- `vpn_peer_revoke`, `patch_deploy`.
+
+Вне hardened-режима все перечисленные destructive-команды **требуют явного подтверждения** (`confirm=true` в аргументах вызова). Каждый вызов (разрешённый, отклонённый, заблокированный) пишется в журнал аудита `~/.w420/audit.db` (таблица `cmd_audit`: ts, cmd, host_id, result).

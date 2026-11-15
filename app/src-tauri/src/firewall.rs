@@ -142,8 +142,16 @@ pub struct FwApplyResult {
 
 /// Применить профиль сегментации (сохраняется в firewall.json).
 #[tauri::command]
-pub fn fw_profile_apply(mgr: State<FirewallManager>, profile: String) -> FwApplyResult {
-    let mut st = mgr.state.lock().unwrap().clone();
+pub fn fw_profile_apply(mgr: State<FirewallManager>, profile: String, confirm: Option<bool>) -> FwApplyResult {
+    // применение профиля меняет правила nft — destructive: гейт + аудит (аудит 14.11)
+    if let Err(e) = crate::hardened::guard_destructive("fw_profile_apply", None, confirm) {
+        return FwApplyResult { saved: false, applied: false, needs_root: false, detail: e, rules: String::new() };
+    }
+    // poisoned mutex не роняет процесс: логируем в аудит и берём дефолт (аудит 14.11, п.2.4)
+    let mut st = match mgr.state.lock() {
+        Ok(g) => g.clone(),
+        Err(_) => { crate::hardened::audit_cmd("fw_profile_apply", None, "MUTEX_POISONED"); FwState::default() }
+    };
     st.profile = profile.clone();
     mgr.persist(&st);
     let rules = build_profile_rules(&profile).unwrap_or_default();
@@ -229,7 +237,9 @@ pub fn fw_rule_remove(mgr: State<FirewallManager>, chain: String, handle: String
 
 /// Автоизоляция скомпрометированного хоста: drop в обе стороны + запись в лог.
 #[tauri::command]
-pub fn fw_isolate_host(mgr: State<FirewallManager>, ip: String) -> Result<String, String> {
+pub fn fw_isolate_host(mgr: State<FirewallManager>, ip: String, confirm: Option<bool>) -> Result<String, String> {
+    // изоляция хоста рвёт все его соединения — destructive: гейт + аудит (аудит 14.11)
+    crate::hardened::guard_destructive("fw_isolate_host", Some(&ip), confirm)?;
     let r1 = run_nft(&["add", "rule", "inet", "w420_fw", "input", "ip", "saddr", &ip, "drop"]);
     let r2 = run_nft(&["add", "rule", "inet", "w420_fw", "output", "ip", "daddr", &ip, "drop"]);
     mgr.log_event(Some(&ip), "isolate both directions", "isolate", &mgr.state.lock().unwrap().profile);

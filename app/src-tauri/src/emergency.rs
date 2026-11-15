@@ -216,7 +216,12 @@ pub fn emergency_set(
     level: Option<String>,
     egress_strict: Option<bool>,
     auto_on_alert: Option<bool>,
+    confirm: Option<bool>,
 ) -> EmergencyApplyResult {
+    // аварийный режим меняет nft-правила — destructive: гейт + аудит (аудит 14.11)
+    if let Err(e) = crate::hardened::guard_destructive("emergency_set", None, confirm) {
+        return EmergencyApplyResult { applied: false, needs_root: false, detail: e, saved: false, rules: String::new() };
+    }
     let mut st = mgr.state.lock().unwrap().clone();
     if let Some(l) = level {
         st.level = l;
@@ -261,8 +266,16 @@ pub fn emergency_set(
 
 /// Переприменить сохранённое состояние (например, после старта приложения).
 #[tauri::command]
-pub fn emergency_apply_saved(mgr: State<EmergencyManager>) -> EmergencyApplyResult {
-    let st = mgr.state.lock().unwrap().clone();
+pub fn emergency_apply_saved(mgr: State<EmergencyManager>, confirm: Option<bool>) -> EmergencyApplyResult {
+    // применение сохранённого аварийного набора — destructive: гейт + аудит (аудит 14.11)
+    if let Err(e) = crate::hardened::guard_destructive("emergency_apply_saved", None, confirm) {
+        return EmergencyApplyResult { applied: false, needs_root: false, detail: e, saved: false, rules: String::new() };
+    }
+    // poisoned mutex не роняет процесс: логируем в аудит и берём дефолт (аудит 14.11, п.2.4)
+    let st = match mgr.state.lock() {
+        Ok(g) => g.clone(),
+        Err(_) => { crate::hardened::audit_cmd("emergency_apply_saved", None, "MUTEX_POISONED"); EmergencyState::default() }
+    };
     emergency_set_inner(&mgr, st.enabled, Some(st.level), Some(st.egress_strict), Some(st.auto_on_alert))
 }
 

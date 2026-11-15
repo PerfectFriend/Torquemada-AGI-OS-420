@@ -556,7 +556,9 @@ pub fn vpn_peer_add(mgr: tauri::State<'_, VpnManager>, name: String) -> Result<s
 }
 
 #[tauri::command]
-pub fn vpn_peer_revoke(mgr: tauri::State<'_, VpnManager>, name: String) -> Result<String, String> {
+pub fn vpn_peer_revoke(mgr: tauri::State<'_, VpnManager>, name: String, confirm: Option<bool>) -> Result<String, String> {
+    // отзыв peer'а удаляет доступ — destructive: гейт + аудит (аудит 14.11)
+    crate::hardened::guard_destructive("vpn_peer_revoke", Some(&name), confirm)?;
     mgr.peer_revoke(&name)
 }
 

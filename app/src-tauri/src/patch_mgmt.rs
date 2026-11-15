@@ -324,7 +324,9 @@ pub fn patch_list_updates(mgr: tauri::State<'_, PatchManager>, security_only: Op
 }
 
 #[tauri::command]
-pub fn patch_deploy(mgr: tauri::State<'_, PatchManager>, security_only: Option<bool>) -> Result<serde_json::Value, String> {
+pub fn patch_deploy(mgr: tauri::State<'_, PatchManager>, security_only: Option<bool>, confirm: Option<bool>) -> Result<serde_json::Value, String> {
+    // установка пакетов меняет систему — destructive: гейт + аудит (аудит 14.11)
+    crate::hardened::guard_destructive("patch_deploy", None, confirm)?;
     mgr.deploy(security_only.unwrap_or(true))
 }
 

@@ -17,6 +17,7 @@ mod emergency;
 mod voice;
 mod updates;
 mod harden;
+mod hardened;
 mod firewall;
 mod siem;
 mod edr;
