@@ -169,6 +169,111 @@ class QwenEngine:
                 pass
 
 
+class KokoroRuEngine:
+    """Kokoro-RU (zaakirio/kokoro-ru, 82M, ONNX, CPU ~10x realtime).
+    Фиксированные голоса dima/sveta/masha из ~/.w420/tts-models/kokoro-ru.
+    Русский G2P с ударениями: '+' перед ударной гласной (phonemize_accented),
+    напр. "времена" -> "вре+мена". Для не-ru языков — фолбэк на espeak-ng ниже.
+    """
+
+    sr = SR
+    VOICES = ("dima", "sveta", "masha")
+
+    def __init__(self, model_dir: Path):
+        import sys
+
+        sys.path.insert(0, str(model_dir))  # для ru_g2p
+        import numpy as np
+        from kokoro_onnx import Kokoro
+        from ru_g2p import RuG2P
+
+        self.dir = model_dir
+        self.g2p = RuG2P(espeak_data=model_dir / "espeak-data")
+        model = os.environ.get(
+            "W420_KOKORO_MODEL", str(model_dir / "onnx" / "model_dima_quantized.onnx")
+        )
+        if not os.path.isfile(model):
+            model = str(model_dir / "onnx" / "model.onnx")
+        self.kokoro = Kokoro(model, str(model_dir / "voices" / "dima.npy"))
+        self.packs = {}
+        for v in self.VOICES:
+            raw = np.fromfile(model_dir / "voices" / f"{v}.bin", dtype=np.float32)
+            self.packs[v] = raw.reshape(-1, 1, 256)
+
+    def latents(self, name):
+        # для Kokoro "latent" — это имя фиксированного голоса (dima/sveta/masha)
+        name = str(name).strip().lower()
+        return name if name in self.VOICES else self.VOICES[0]
+
+    def speak(self, text, lang, lat, speed):
+        import numpy as np
+
+        if lang != "ru":
+            # Kokoro-RU только русский; прочее отдаём espeak-ng как раньше
+            import subprocess, tempfile
+
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
+                out = tf.name
+            try:
+                subprocess.run(
+                    ["espeak-ng", "-v", lang, "-s", str(int(170 * speed)), "-w", out, text],
+                    capture_output=True, timeout=60,
+                )
+                raw = Path(out).read_bytes()
+                x, sr = read_wav(raw)
+                return resample(x, sr)
+            finally:
+                try:
+                    os.unlink(out)
+                except FileNotFoundError:
+                    pass
+        ipa, oov = self.g2p.phonemize_accented(_plus_to_acute_marks(text))
+        if oov:
+            state["msg"] = f"kokoro-ru OOV: {sorted(oov)}"
+        samples, sr = self.kokoro.create(
+            ipa, voice=self.packs[lat], speed=min(2.0, max(0.5, speed)), lang="ru", is_phonemes=True
+        )
+        return resample(np.asarray(samples, dtype=np.float32), sr)
+
+
+def _plus_to_acute_marks(text: str) -> str:
+    """'+' рядом с гласной -> combining acute U+0301 на этой гласной (то, что
+    понимает acute-aware espeak-data kokoro-ru). Сам '+' всегда удаляется и
+    никогда не озвучивается. Работает и "времена+" (после гласной), и "вре+мена" (до)."""
+    vowels = "аеёиоуыэюяАЕЁИОУЫЭЮЯaeiouyAEIOUY"
+    out, i = [], 0
+    while i < len(text):
+        ch = text[i]
+        if ch == "+":
+            if out and out[-1] and out[-1][-1] in vowels and not out[-1].endswith("́"):
+                out[-1] += "́"  # U+0301 после гласной слева ("времена+")
+            elif i + 1 < len(text) and text[i + 1] in vowels:
+                out.append(text[i + 1] + "́")  # U+0301 после гласной справа ("вре+мена")
+                i += 1
+            # иначе '+' просто выбрасываем
+        else:
+            out.append(ch)
+        i += 1
+    return "".join(out)
+
+
+def _register_kokoro_voices():
+    """Регистрирует фиксированные голоса Kokoro-RU в общем реестре голосов,
+    чтобы /speak принимал их id как обычные voice_id (с полем pack=имя голоса)."""
+    with meta_lock:
+        items = load_meta()
+        have = {i["id"] for i in items}
+        for v in KokoroRuEngine.VOICES:
+            vid = hashlib.md5(f"kokoro-ru:{v}".encode()).hexdigest()[:12]
+            if vid not in have:
+                items.append({
+                    "id": vid, "name": f"kokoro-ru {v}", "pack": v,
+                    "seconds": 0, "created": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                    "consent_at": "fixed voice (consented studio actor, OpenRAIL)",
+                })
+        save_meta(items)
+
+
 def load_engine():
     global engine
     try:
@@ -176,10 +281,29 @@ def load_engine():
             engine = FakeEngine()
             state.update(status="ready", engine="fake", device="cpu", msg="тестовый движок (тон вместо голоса)")
             return
-        # Выбор движка: W420_TTS_ENGINE=qwen|xtts|auto (auto: qwen, если модели на месте, иначе xtts)
+        # Выбор движка: W420_TTS_ENGINE=qwen|kokoro|xtts|auto (auto: kokoro-ru, если модель на месте, иначе qwen, иначе xtts)
         want = os.environ.get("W420_TTS_ENGINE", "auto").lower()
         home = Path(os.environ.get("W420_HOME", Path.home() / ".w420"))
         tmodels = home / "tts-models"
+        kdir = Path(os.environ.get("W420_KOKORO_DIR", str(tmodels / "kokoro-ru")))
+        kokoro_ok = (kdir / "onnx").is_dir() and any((kdir / "voices").glob("*.bin"))
+        if want == "kokoro" or (want == "auto" and kokoro_ok):
+            if not kokoro_ok:
+                state.update(status="error", msg="Kokoro-RU: нет модели в ~/.w420/tts-models/kokoro-ru")
+                return
+            try:
+                engine = KokoroRuEngine(kdir)
+            except Exception as e:
+                state.update(status="error", msg=f"Kokoro-RU не загрузился: {type(e).__name__}: {e}")
+                return
+            _register_kokoro_voices()
+            state.update(
+                status="ready",
+                engine="kokoro-ru-onnx",
+                device="cpu",
+                msg=f"Kokoro-RU 82M ONNX (голоса: {', '.join(KokoroRuEngine.VOICES)}), CPU ~10x realtime, ударения через '+'",
+            )
+            return
         qbin = os.environ.get(
             "W420_QWEN_TTS_BIN",
             str(Path.home() / ".hermes/tools/llamacpp-vulkan-11671-linux-x64/llama-tts"),
@@ -356,7 +480,8 @@ async def speak(req: Request):
         return Response(cache[key], media_type="audio/wav")
     with gen_lock:
         if vid not in latents:
-            latents[vid] = engine.latents(VOICES / f"{vid}.wav")
+            item = next((i for i in load_meta() if i["id"] == vid), {})
+            latents[vid] = engine.latents(item.get("pack") or VOICES / f"{vid}.wav")
         gap = np.zeros(int(SR * 0.12), dtype=np.float32)
         parts = []
         for chunk in split_text(text, CHAR_LIMIT.get(lang, DEFAULT_LIMIT)):
